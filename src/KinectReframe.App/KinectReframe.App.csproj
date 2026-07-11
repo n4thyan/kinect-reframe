@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" Condition="false" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <UseKinectStub Condition=" '$(UseKinectStub)' == '' ">false</UseKinectStub>
     <ProjectGuid>{D1D45C2A-7204-4FBA-8A50-0C530B9E41F2}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>KinectReframe</RootNamespace>
@@ -42,7 +42,7 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="Microsoft.Kinect">
+    <Reference Include="Microsoft.Kinect" Condition=" '$(UseKinectStub)' != 'true' ">
       <HintPath>$(KINECTSDK10_DIR)\Assemblies\Microsoft.Kinect.dll</HintPath>
       <Private>False</Private>
     </Reference>
@@ -69,6 +69,9 @@
     <Compile Include="Services\SessionRecorder.cs" />
     <Compile Include="Tracking\JointSmoother.cs" />
     <Compile Include="Tracking\RecordingModels.cs" />
+    <Compile Include="..\..\ci\KinectApiStub.cs"
+             Link="KinectApiStub.cs"
+             Condition=" '$(UseKinectStub)' == 'true' " />
   </ItemGroup>
 
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
