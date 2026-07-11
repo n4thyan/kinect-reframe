@@ -67,6 +67,9 @@
     <Compile Include="MainWindow.Product.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="MainWindow.ShellEvents.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MainWindow.Studio.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
