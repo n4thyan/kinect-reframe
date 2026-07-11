@@ -75,6 +75,14 @@ recordings/
 
 Skeleton recordings use the `.krs.json` extension. Each frame stores the raw Kinect coordinates, the smoothed coordinates, tracking state and whether the enhanced joint was temporarily predicted.
 
+Analyse a recording with Python 3:
+
+```powershell
+python .\tools\analyse_recording.py .\recordings\session-YYYYMMDD-HHMMSS.krs.json
+```
+
+The report shows duration, average frame rate, raw-to-smoothed correction distance and counts for inferred or predicted joints.
+
 ## Architecture
 
 ```text
@@ -84,6 +92,12 @@ Kinect skeleton ─────────────────> raw skeleto
                   └──────────────> temporal smoother and short occlusion hold
                                   └────────> enhanced skeleton + JSON recorder
 ```
+
+## Continuous integration
+
+The Windows workflow compiles the WPF and XAML structure with a small Kinect API shim because GitHub-hosted runners do not include Kinect SDK 1.8. Normal builds never include that shim and still use the real `Microsoft.Kinect.dll` installed on the development PC.
+
+A successful CI compile does not prove that the physical sensor or Kinect runtime works. Hardware smoke testing remains required.
 
 ## Planned work
 
