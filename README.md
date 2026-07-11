@@ -12,21 +12,22 @@ The WPF prototype includes:
 - RGB camera feed at 640 x 480
 - depth feed at 320 x 240
 - seated and full-body skeleton modes
-- optional raw and temporally smoothed skeleton overlays
-- short joint hold when tracking is briefly lost
+- optional raw and enhanced skeleton overlays
+- velocity-aware adaptive smoothing
+- short decaying joint prediction through momentary tracking loss
 - tracked, inferred and predicted joint colours
 - body-only depth hologram render using the Kinect player mask
 - live camera-space 3D point-cloud renderer
-- dense body sampling with depth-aware surface shading
+- adjustable 3D detail, point size and surface shading
 - mouse-drag orbit, mouse-wheel zoom and view reset
 - body-only and full-scene point-cloud modes
 - ASCII PLY export for Blender, MeshLab and other 3D tools
 - motion-history and depth-distance heatmaps
 - mirror, freeze, framing grid and camera-focus controls
 - software brightness and contrast adjustment
-- separate application and clean camera-frame screenshots
-- adjustable smoothing and motion sensitivity
-- JSON recording of raw and smoothed joints
+- separate application and clean camera-output screenshots
+- camera-output scaling from 0.5x to 3x
+- JSON recording of raw and enhanced skeleton data
 - live FPS, tracking status and sampled point count
 
 The skeleton and both heatmap overlays start **off**, leaving a clean camera view. Every visual layer uses a clear on/off pill toggle.
@@ -47,6 +48,7 @@ The prototype deliberately starts without a large AI dependency. It creates a me
 | Focus camera | Hides the right renderer panel and enlarges the camera. |
 | Body-only renders | Excludes untracked room pixels from heatmaps and 3D renders. |
 | Seated tracking | Uses Kinect SDK seated upper-body tracking. |
+| Output scale | Saves the clean camera composition between 320 x 240 and 1920 x 1440. |
 
 Brightness and contrast are display-only adjustments. They do not alter the Kinect's hardware exposure or the data saved in skeleton recordings.
 
@@ -57,28 +59,50 @@ The heatmaps are **not thermal imaging**. Xbox 360 Kinect cannot measure body te
 
 Use **Clear heat** to remove accumulated motion trails and **Reset camera** to restore the neutral camera view.
 
+## Tracking behaviour
+
+The enhanced skeleton uses a velocity-aware temporal filter:
+
+- slow or stationary joints receive stronger smoothing to reduce jitter
+- fast deliberate movement receives a quicker response to reduce visible lag
+- briefly lost joints continue along a short, decaying velocity estimate
+- predicted joints remain amber and time out after eight frames
+
+The system does not claim that predicted joints were directly observed by the Kinect.
+
 ## 3D controls
 
 Open the **3D POINT CLOUD** tab in the right-hand panel:
 
 - drag with the left mouse button to orbit the live depth cloud
 - use the mouse wheel to zoom
+- use **3D detail** to trade performance for denser geometry
+- use **Point size** to switch between fine particles and a more solid surface
+- toggle **3D shading** to compare flat hologram colour against depth-derived surface lighting
 - toggle **Body-only renders** to switch between the tracked person and the visible room
-- use **Reset 3D** to return to the Kinect camera angle
-- use **Export PLY** to save the current body or room cloud in real camera-space metres
+- use **Reset 3D** to restore the default view and quality settings
 
-The renderer uses the Kinect SDK coordinate mapper to convert each depth pixel into a real camera-space `X/Y/Z` point. Body-only mode samples every valid player-indexed depth pixel, while complete-scene mode uses a lighter stride to protect frame rate. Local depth neighbours are used to estimate surface orientation, adding stable shading that reveals more facial and torso form without inventing geometry.
+The renderer uses the Kinect SDK coordinate mapper to convert depth pixels into real camera-space `X/Y/Z` points. Local depth neighbours estimate surface orientation, adding stable shading that reveals more facial and torso form without inventing geometry.
 
-PLY exports include per-vertex RGB values. Tracked-player points use the cyan hologram palette and room points use a depth-based colour gradient.
+## Recordings and output
 
-## Tracking colours
+The button labelled **Record tracking data** saves motion-capture data rather than video. Files use the `.krs.json` extension and contain raw joints, enhanced joints, confidence state and prediction state for each frame.
 
-| Colour | Meaning |
-| --- | --- |
-| Grey | Raw Kinect skeleton |
-| Green | Directly tracked and smoothed |
-| Blue | Kinect-inferred joint |
-| Amber | Joint briefly held by Kinect Reframe after loss |
+Actual RGB/depth video encoding is planned separately. The current **Output scale** control applies to clean camera PNG output and is intended to be reused by the future video recorder.
+
+Runtime files are written beside the executable and ignored by Git:
+
+```text
+captures/    PNG interface and camera-output images
+recordings/  timestamped .krs.json skeleton sessions
+exports/     body or scene .ply point clouds
+```
+
+Analyse a recording with Python 3:
+
+```powershell
+python .\tools\analyse_recording.py .\recordings\session-YYYYMMDD-HHMMSS.krs.json
+```
 
 ## Requirements
 
@@ -99,64 +123,38 @@ The project builds as **x86** for broad Kinect SDK 1.8 compatibility.
 5. Select `Debug | x86`.
 6. Build and run `KinectReframe.App`.
 
-You can check the local environment from PowerShell:
+PowerShell build:
 
 ```powershell
 .\scripts\check-environment.ps1
-```
-
-You can also build from PowerShell after installing Visual Studio:
-
-```powershell
 .\scripts\build.ps1
 ```
-
-## Output files
-
-Runtime files are written beside the executable and ignored by Git:
-
-```text
-captures/    PNG interface snapshots
-recordings/  timestamped .krs.json skeleton sessions
-exports/     body or scene .ply point clouds
-```
-
-Skeleton recordings use the `.krs.json` extension. Each frame stores the raw Kinect coordinates, the smoothed coordinates, tracking state and whether the enhanced joint was temporarily predicted.
-
-Analyse a recording with Python 3:
-
-```powershell
-python .\tools\analyse_recording.py .\recordings\session-YYYYMMDD-HHMMSS.krs.json
-```
-
-The report shows duration, average frame rate, raw-to-smoothed correction distance and counts for inferred or predicted joints.
 
 ## Architecture
 
 ```text
-Kinect RGB stream ───────────────> live camera panel
+Kinect RGB stream ───────────────> live camera panel and scaled PNG output
 Kinect depth + player index ─────> depth hologram renderer
                  ├───────────────> motion/depth heatmaps
                  └───────────────> camera-space X/Y/Z mapping
-                                    ├────────> dense shaded 3D point cloud
+                                    ├────────> configurable shaded 3D point cloud
                                     └────────> PLY exporter
 Kinect skeleton ─────────────────> raw skeleton
-                  └──────────────> temporal smoother and short occlusion hold
+                  └──────────────> adaptive smoothing + short velocity prediction
                                    └────────> enhanced skeleton + JSON recorder
 ```
 
 ## Continuous integration
 
-The Windows workflow compiles the WPF and XAML structure with a small Kinect API shim because GitHub-hosted runners do not include Kinect SDK 1.8. Normal builds never include that shim and still use the real `Microsoft.Kinect.dll` installed on the development PC.
+The Windows workflow compiles the WPF and XAML structure with a small Kinect API shim because GitHub-hosted runners do not include Kinect SDK 1.8. Normal builds use the real `Microsoft.Kinect.dll` installed on the development PC.
 
 A successful CI compile does not prove that the physical sensor or Kinect runtime works. Hardware smoke testing remains required.
 
 ## Planned work
 
-- velocity-aware One Euro or Kalman filtering
 - replay and side-by-side tracking comparison
 - RGB-aligned point-cloud colouring
-- configurable point size and render-density controls
+- RGB and depth video recording
 - Kinect depth mapped onto RGB pose landmarks
 - modern pose model integration through ONNX Runtime
 - confidence-weighted fusion between Kinect and AI estimates
