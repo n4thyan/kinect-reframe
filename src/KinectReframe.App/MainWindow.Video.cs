@@ -29,6 +29,7 @@ namespace KinectReframe
                 else
                 {
                     TrackingStatusText.Text = "Stop the current render recording before starting camera video";
+                    ShowToast(TrackingStatusText.Text);
                 }
 
                 return;
@@ -48,6 +49,7 @@ namespace KinectReframe
                 else
                 {
                     TrackingStatusText.Text = "Stop the current camera recording before starting render video";
+                    ShowToast(TrackingStatusText.Text);
                 }
 
                 return;
@@ -104,16 +106,20 @@ namespace KinectReframe
                 videoCaptureTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / fps);
                 videoCaptureTimer.Start();
                 SetVideoRecordingUi(true);
+                UpdateTaskbarRecordingState(true);
                 CaptureCurrentVideoFrame();
                 TrackingStatusText.Text = "Recording " + GetVideoDisplayName(source) + " to " + path;
                 StatusBarMessageText.Text = "Recording " + GetVideoDisplayName(source);
+                ShowToast("Recording started • " + activeVideoWidth + " × " + activeVideoHeight + " at " + fps + " fps");
             }
             catch (Exception exception)
             {
                 activeVideoSource = VideoCaptureSource.None;
                 SetVideoRecordingUi(false);
+                UpdateTaskbarRecordingState(false);
                 TrackingStatusText.Text = "Could not start video recording: " + exception.Message;
                 StatusBarMessageText.Text = "Recording could not start";
+                ShowToast(TrackingStatusText.Text);
             }
         }
 
@@ -133,6 +139,7 @@ namespace KinectReframe
             {
                 TrackingStatusText.Text = "Video capture failed: " + exception.Message;
                 StopActiveVideoRecording(false);
+                ShowToast(TrackingStatusText.Text);
             }
         }
 
@@ -196,6 +203,7 @@ namespace KinectReframe
             VideoRecordingResult result = videoRecorder.Stop();
             activeVideoSource = VideoCaptureSource.None;
             SetVideoRecordingUi(false);
+            UpdateTaskbarRecordingState(false);
 
             if (!showResult)
             {
@@ -206,6 +214,7 @@ namespace KinectReframe
             {
                 TrackingStatusText.Text = "Video recording failed: " + result.Error.Message;
                 StatusBarMessageText.Text = "Video recording failed";
+                ShowToast(TrackingStatusText.Text);
                 return;
             }
 
@@ -213,6 +222,7 @@ namespace KinectReframe
             {
                 TrackingStatusText.Text = "No video frames were written";
                 StatusBarMessageText.Text = "No video frames written";
+                ShowToast(TrackingStatusText.Text);
                 return;
             }
 
@@ -226,6 +236,10 @@ namespace KinectReframe
                 "Saved {0:N0} frames • {1:N0} dropped",
                 result.FramesWritten,
                 result.DroppedFrames);
+            ShowToast(string.Format(
+                "Video saved • {0:N0} frames • {1:N0} dropped",
+                result.FramesWritten,
+                result.DroppedFrames));
         }
 
         private void SetVideoRecordingUi(bool recording)
