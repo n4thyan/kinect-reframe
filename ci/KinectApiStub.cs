@@ -202,6 +202,33 @@ namespace Microsoft.Kinect
                 Y = (int)((1.0f - point.Y) * 240.0f)
             };
         }
+
+        public void MapDepthFrameToSkeletonFrame(
+            DepthImageFormat format,
+            DepthImagePixel[] depthPixels,
+            SkeletonPoint[] skeletonPoints)
+        {
+            if (depthPixels == null || skeletonPoints == null)
+            {
+                return;
+            }
+
+            int length = Math.Min(depthPixels.Length, skeletonPoints.Length);
+            const int width = 320;
+            const int height = 240;
+            for (int index = 0; index < length; index++)
+            {
+                int x = index % width;
+                int y = index / width;
+                float z = depthPixels[index].Depth / 1000.0f;
+                skeletonPoints[index] = new SkeletonPoint
+                {
+                    X = ((x - (width * 0.5f)) / width) * z,
+                    Y = (((height * 0.5f) - y) / height) * z,
+                    Z = z
+                };
+            }
+        }
     }
 
     public sealed class KinectSensorCollection : IEnumerable<KinectSensor>
