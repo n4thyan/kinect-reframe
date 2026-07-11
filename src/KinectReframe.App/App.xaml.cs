@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Text;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace KinectReframe
@@ -13,6 +15,67 @@ namespace KinectReframe
             base.OnStartup(e);
             DispatcherUnhandledException += App_DispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
+            Dispatcher.BeginInvoke(
+                DispatcherPriority.ApplicationIdle,
+                new Action(delegate
+                {
+                    if (MainWindow != null)
+                    {
+                        MainWindow.Icon = CreateWindowIcon();
+                    }
+                }));
+        }
+
+        internal static ImageSource CreateWindowIcon()
+        {
+            const int size = 64;
+            DrawingVisual visual = new DrawingVisual();
+            using (DrawingContext context = visual.RenderOpen())
+            {
+                context.DrawRoundedRectangle(
+                    new SolidColorBrush(Color.FromRgb(32, 34, 40)),
+                    new Pen(new SolidColorBrush(Color.FromRgb(76, 141, 255)), 3),
+                    new Rect(2, 2, 60, 60),
+                    10,
+                    10);
+
+                context.DrawRoundedRectangle(
+                    new SolidColorBrush(Color.FromRgb(10, 12, 16)),
+                    new Pen(new SolidColorBrush(Color.FromRgb(99, 105, 116)), 1.5),
+                    new Rect(10, 22, 44, 20),
+                    6,
+                    6);
+
+                context.DrawEllipse(
+                    new SolidColorBrush(Color.FromRgb(32, 59, 96)),
+                    new Pen(new SolidColorBrush(Color.FromRgb(76, 141, 255)), 2),
+                    new Point(32, 32),
+                    8,
+                    8);
+                context.DrawEllipse(
+                    new SolidColorBrush(Color.FromRgb(104, 166, 255)),
+                    null,
+                    new Point(32, 32),
+                    3,
+                    3);
+
+                SolidColorBrush sensorBrush = new SolidColorBrush(Color.FromRgb(56, 201, 154));
+                context.DrawEllipse(sensorBrush, null, new Point(16, 32), 2.5, 2.5);
+                context.DrawEllipse(sensorBrush, null, new Point(22, 32), 2.5, 2.5);
+                context.DrawEllipse(sensorBrush, null, new Point(42, 32), 2.5, 2.5);
+                context.DrawEllipse(sensorBrush, null, new Point(48, 32), 2.5, 2.5);
+
+                context.DrawRectangle(
+                    new SolidColorBrush(Color.FromRgb(76, 141, 255)),
+                    null,
+                    new Rect(14, 15, 36, 2));
+            }
+
+            RenderTargetBitmap bitmap = new RenderTargetBitmap(size, size, 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(visual);
+            bitmap.Freeze();
+            return bitmap;
         }
 
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
