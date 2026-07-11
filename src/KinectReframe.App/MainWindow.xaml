@@ -3,13 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Kinect Reframe"
         Width="1450"
-        Height="930"
+        Height="970"
         MinWidth="1080"
-        MinHeight="760"
+        MinHeight="780"
         Background="{StaticResource WindowBackgroundBrush}"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        Closed="Window_Closed">
     <Grid x:Name="RootVisual" Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -32,17 +33,32 @@
                            Margin="0,4,0,0" />
             </StackPanel>
 
-            <Border Grid.Column="1"
-                    Background="{StaticResource PanelBrush}"
-                    BorderBrush="{StaticResource PanelBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    Padding="12,8">
-                <StackPanel Orientation="Horizontal">
-                    <Ellipse x:Name="ConnectionIndicator" Width="10" Height="10" Fill="#D85858" Margin="0,0,8,0" />
-                    <TextBlock x:Name="ConnectionText" Text="Waiting for sensor" VerticalAlignment="Center" />
-                </StackPanel>
-            </Border>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Border x:Name="VideoStatusBadge"
+                        Background="#2A191C"
+                        BorderBrush="#6C3038"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12,8"
+                        Margin="0,0,10,0"
+                        Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="10" Height="10" Fill="#EF7373" Margin="0,0,8,0" />
+                        <TextBlock x:Name="VideoStatusText" Text="REC 00:00" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource PanelBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12,8">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse x:Name="ConnectionIndicator" Width="10" Height="10" Fill="#D85858" Margin="0,0,8,0" />
+                        <TextBlock x:Name="ConnectionText" Text="Waiting for sensor" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
         </Grid>
 
         <Grid x:Name="MainContentGrid" Grid.Row="2">
@@ -125,9 +141,9 @@
                     BorderThickness="1"
                     CornerRadius="4"
                     ClipToBounds="True">
-                <TabControl Background="#030A0B" BorderThickness="0">
+                <TabControl x:Name="RendererTabs" Background="#030A0B" BorderThickness="0">
                     <TabItem Header="DEPTH HOLOGRAM">
-                        <Grid Background="#030A0B">
+                        <Grid x:Name="DepthRenderSurface" Background="#030A0B">
                             <Image x:Name="BodyImage"
                                    Stretch="Uniform"
                                    RenderOptions.BitmapScalingMode="NearestNeighbor" />
@@ -202,163 +218,70 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="6" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="6" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="8" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <WrapPanel Grid.Row="0" VerticalAlignment="Center">
-                    <ToggleButton x:Name="SkeletonToggle"
-                                  Content="Skeleton"
-                                  Style="{StaticResource PillToggleStyle}"
-                                  IsChecked="False"
-                                  Checked="VisualToggle_Changed"
-                                  Unchecked="VisualToggle_Changed" />
-                    <ToggleButton x:Name="RawSkeletonToggle"
-                                  Content="Raw skeleton"
-                                  Style="{StaticResource PillToggleStyle}"
-                                  IsChecked="False"
-                                  IsEnabled="False" />
-                    <ToggleButton x:Name="MotionHeatToggle"
-                                  Content="Motion heat"
-                                  Style="{StaticResource PillToggleStyle}"
-                                  IsChecked="False"
-                                  Checked="HeatmapToggle_Changed"
-                                  Unchecked="HeatmapToggle_Changed" />
-                    <ToggleButton x:Name="DepthHeatToggle"
-                                  Content="Depth heat"
-                                  Style="{StaticResource PillToggleStyle}"
-                                  IsChecked="False"
-                                  Checked="HeatmapToggle_Changed"
-                                  Unchecked="HeatmapToggle_Changed" />
-                    <ToggleButton x:Name="MirrorToggle"
-                                  Content="Mirror"
-                                  Style="{StaticResource PillToggleStyle}"
-                                  IsChecked="True"
-                                  Checked="VisualToggle_Changed"
-                                  Unchecked="VisualToggle_Changed" />
-                    <ToggleButton x:Name="FreezeToggle"
-                                  Content="Freeze"
-                                  Style="{StaticResource PillToggleStyle}"
-                                  IsChecked="False"
-                                  Checked="VisualToggle_Changed"
-                                  Unchecked="VisualToggle_Changed" />
-                    <ToggleButton x:Name="GridToggle"
-                                  Content="Grid"
-                                  Style="{StaticResource PillToggleStyle}"
-                                  IsChecked="False"
-                                  Checked="VisualToggle_Changed"
-                                  Unchecked="VisualToggle_Changed" />
-                    <ToggleButton x:Name="FocusCameraToggle"
-                                  Content="Focus camera"
-                                  Style="{StaticResource PillToggleStyle}"
-                                  IsChecked="False"
-                                  Checked="VisualToggle_Changed"
-                                  Unchecked="VisualToggle_Changed" />
-                    <ToggleButton x:Name="BodyOnlyToggle"
-                                  Content="Body-only renders"
-                                  Style="{StaticResource PillToggleStyle}"
-                                  IsChecked="True" />
-                    <ToggleButton x:Name="SeatedModeToggle"
-                                  Content="Seated tracking"
-                                  Style="{StaticResource PillToggleStyle}"
-                                  IsChecked="True"
-                                  Checked="SeatedModeToggle_Changed"
-                                  Unchecked="SeatedModeToggle_Changed" />
+                    <ToggleButton x:Name="SkeletonToggle" Content="Skeleton" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
+                    <ToggleButton x:Name="RawSkeletonToggle" Content="Raw skeleton" Style="{StaticResource PillToggleStyle}" IsChecked="False" IsEnabled="False" />
+                    <ToggleButton x:Name="MotionHeatToggle" Content="Motion heat" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="HeatmapToggle_Changed" Unchecked="HeatmapToggle_Changed" />
+                    <ToggleButton x:Name="DepthHeatToggle" Content="Depth heat" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="HeatmapToggle_Changed" Unchecked="HeatmapToggle_Changed" />
+                    <ToggleButton x:Name="MirrorToggle" Content="Mirror" Style="{StaticResource PillToggleStyle}" IsChecked="True" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
+                    <ToggleButton x:Name="FreezeToggle" Content="Freeze" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
+                    <ToggleButton x:Name="GridToggle" Content="Grid" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
+                    <ToggleButton x:Name="FocusCameraToggle" Content="Focus camera" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
+                    <ToggleButton x:Name="BodyOnlyToggle" Content="Body-only renders" Style="{StaticResource PillToggleStyle}" IsChecked="True" />
+                    <ToggleButton x:Name="SeatedModeToggle" Content="Seated tracking" Style="{StaticResource PillToggleStyle}" IsChecked="True" Checked="SeatedModeToggle_Changed" Unchecked="SeatedModeToggle_Changed" />
                 </WrapPanel>
 
                 <WrapPanel Grid.Row="2" VerticalAlignment="Center">
                     <TextBlock Text="Brightness" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <Slider x:Name="BrightnessSlider"
-                            Width="105"
-                            Minimum="-80"
-                            Maximum="80"
-                            Value="0"
-                            ValueChanged="CameraAdjustmentSlider_Changed" />
+                    <Slider x:Name="BrightnessSlider" Width="105" Minimum="-80" Maximum="80" Value="0" ValueChanged="CameraAdjustmentSlider_Changed" />
                     <TextBlock x:Name="BrightnessValueText" Text="0" Width="34" VerticalAlignment="Center" />
-
                     <TextBlock Text="Contrast" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="ContrastSlider"
-                            Width="105"
-                            Minimum="0.6"
-                            Maximum="1.6"
-                            Value="1"
-                            ValueChanged="CameraAdjustmentSlider_Changed" />
+                    <Slider x:Name="ContrastSlider" Width="105" Minimum="0.6" Maximum="1.6" Value="1" ValueChanged="CameraAdjustmentSlider_Changed" />
                     <TextBlock x:Name="ContrastValueText" Text="1.00" Width="42" VerticalAlignment="Center" />
-
                     <TextBlock Text="Smoothing" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="SmoothingSlider"
-                            Width="105"
-                            Minimum="0.08"
-                            Maximum="1"
-                            Value="0.35"
-                            ValueChanged="SmoothingSlider_ValueChanged" />
+                    <Slider x:Name="SmoothingSlider" Width="105" Minimum="0.08" Maximum="1" Value="0.35" ValueChanged="SmoothingSlider_ValueChanged" />
                     <TextBlock x:Name="SmoothingValueText" Text="0.35" Width="42" VerticalAlignment="Center" />
-
                     <TextBlock Text="Motion threshold" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="MotionThresholdSlider"
-                            Width="105"
-                            Minimum="10"
-                            Maximum="180"
-                            Value="35"
-                            ValueChanged="HeatmapSlider_Changed" />
+                    <Slider x:Name="MotionThresholdSlider" Width="105" Minimum="10" Maximum="180" Value="35" ValueChanged="HeatmapSlider_Changed" />
                     <TextBlock x:Name="MotionThresholdValueText" Text="35 mm" Width="55" VerticalAlignment="Center" />
-
                     <TextBlock Text="Trail" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="MotionPersistenceSlider"
-                            Width="105"
-                            Minimum="0.75"
-                            Maximum="0.995"
-                            Value="0.94"
-                            ValueChanged="HeatmapSlider_Changed" />
+                    <Slider x:Name="MotionPersistenceSlider" Width="105" Minimum="0.75" Maximum="0.995" Value="0.94" ValueChanged="HeatmapSlider_Changed" />
                     <TextBlock x:Name="MotionPersistenceValueText" Text="0.940" Width="48" VerticalAlignment="Center" />
                 </WrapPanel>
 
                 <WrapPanel Grid.Row="4" VerticalAlignment="Center">
                     <TextBlock Text="3D detail" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <Slider x:Name="PointCloudDetailSlider"
-                            Width="105"
-                            Minimum="1"
-                            Maximum="4"
-                            Value="4"
-                            TickFrequency="1"
-                            IsSnapToTickEnabled="True"
-                            ValueChanged="RenderSettingSlider_Changed" />
+                    <Slider x:Name="PointCloudDetailSlider" Width="105" Minimum="1" Maximum="4" Value="4" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="RenderSettingSlider_Changed" />
                     <TextBlock x:Name="PointCloudDetailValueText" Text="4" Width="28" VerticalAlignment="Center" />
-
                     <TextBlock Text="Point size" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="PointCloudPointSizeSlider"
-                            Width="105"
-                            Minimum="1"
-                            Maximum="4"
-                            Value="2"
-                            TickFrequency="1"
-                            IsSnapToTickEnabled="True"
-                            ValueChanged="RenderSettingSlider_Changed" />
+                    <Slider x:Name="PointCloudPointSizeSlider" Width="105" Minimum="1" Maximum="4" Value="2" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="RenderSettingSlider_Changed" />
                     <TextBlock x:Name="PointCloudPointSizeValueText" Text="2" Width="28" VerticalAlignment="Center" />
-
-                    <ToggleButton x:Name="PointCloudShadingToggle"
-                                  Content="3D shading"
-                                  ToolTip="Uses neighbouring depth points to reveal surface shape"
-                                  Style="{StaticResource PillToggleStyle}"
-                                  IsChecked="True" />
-
+                    <ToggleButton x:Name="PointCloudShadingToggle" Content="3D shading" ToolTip="Uses neighbouring depth points to reveal surface shape" Style="{StaticResource PillToggleStyle}" IsChecked="True" />
                     <TextBlock Text="Output scale" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="OutputScaleSlider"
-                            Width="130"
-                            Minimum="0.5"
-                            Maximum="3"
-                            Value="1"
-                            TickFrequency="0.5"
-                            IsSnapToTickEnabled="True"
-                            ValueChanged="OutputScaleSlider_Changed" />
-                    <TextBlock x:Name="OutputResolutionText"
-                               Text="640 × 480 (1.0x)"
-                               Width="130"
-                               Foreground="{StaticResource MutedTextBrush}"
-                               VerticalAlignment="Center" />
+                    <Slider x:Name="OutputScaleSlider" Width="130" Minimum="0.5" Maximum="3" Value="1" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="OutputScaleSlider_Changed" />
+                    <TextBlock x:Name="OutputResolutionText" Text="640 × 480 (1.0x)" Width="130" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" />
                 </WrapPanel>
 
-                <Grid Grid.Row="6">
+                <WrapPanel Grid.Row="6" VerticalAlignment="Center">
+                    <TextBlock Text="Video FPS" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <Slider x:Name="VideoFpsSlider" Width="105" Minimum="5" Maximum="30" Value="15" TickFrequency="5" IsSnapToTickEnabled="True" ValueChanged="VideoSettingSlider_Changed" />
+                    <TextBlock x:Name="VideoFpsValueText" Text="15" Width="34" VerticalAlignment="Center" />
+                    <TextBlock Text="JPEG quality" VerticalAlignment="Center" Margin="12,0,8,0" />
+                    <Slider x:Name="VideoQualitySlider" Width="105" Minimum="50" Maximum="95" Value="82" TickFrequency="1" ValueChanged="VideoSettingSlider_Changed" />
+                    <TextBlock x:Name="VideoQualityValueText" Text="82" Width="34" VerticalAlignment="Center" />
+                    <TextBlock Text="MJPEG AVI • video only • frames drop rather than blocking Kinect"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               VerticalAlignment="Center"
+                               Margin="14,0,0,0" />
+                </WrapPanel>
+
+                <Grid Grid.Row="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -366,9 +289,12 @@
                     </Grid.ColumnDefinitions>
 
                     <WrapPanel>
+                        <Button x:Name="CameraVideoButton" Content="Record camera video" Click="CameraVideoButton_Click" />
+                        <Button x:Name="RenderVideoButton" Content="Record render video" Click="RenderVideoButton_Click" />
                         <Button x:Name="RecordButton" Content="Record tracking data" Click="RecordButton_Click" />
                         <Button Content="Save app snapshot" Click="SnapshotButton_Click" />
                         <Button Content="Save camera output" Click="CameraSnapshotButton_Click" />
+                        <Button Content="Open output folder" Click="OpenOutputFolderButton_Click" Background="#DCE6EA" />
                         <Button Content="Export PLY" Click="ExportPointCloudButton_Click" />
                         <Button Content="Clear heat" Click="ClearHeatmapButton_Click" Background="#DCE6EA" />
                         <Button Content="Reset camera" Click="ResetCameraButton_Click" Background="#DCE6EA" />
