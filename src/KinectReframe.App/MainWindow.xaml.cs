@@ -36,6 +36,7 @@ namespace KinectReframe
         private int framesSinceFpsUpdate;
         private bool pointCloudDragging;
         private bool suppressHeatmapToggleEvents;
+        private bool uiReady;
         private Point lastPointCloudMousePosition;
         private double pointCloudYaw;
         private double pointCloudPitch;
@@ -48,6 +49,7 @@ namespace KinectReframe
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            uiReady = true;
             UpdatePointCloudViewText();
             ApplyVisualSettings();
             UpdateAdjustmentLabels();
@@ -363,6 +365,11 @@ namespace KinectReframe
 
         private void VisualToggle_Changed(object sender, RoutedEventArgs e)
         {
+            if (!uiReady)
+            {
+                return;
+            }
+
             ApplyVisualSettings();
         }
 
@@ -404,7 +411,7 @@ namespace KinectReframe
 
         private void HeatmapToggle_Changed(object sender, RoutedEventArgs e)
         {
-            if (suppressHeatmapToggleEvents)
+            if (!uiReady || suppressHeatmapToggleEvents)
             {
                 return;
             }
@@ -715,6 +722,8 @@ namespace KinectReframe
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            uiReady = false;
+
             if (recorder.IsRecording)
             {
                 SaveRecording();
