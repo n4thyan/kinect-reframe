@@ -20,6 +20,7 @@ The WPF prototype includes:
 - live camera-space 3D point-cloud renderer
 - mouse-drag orbit, mouse-wheel zoom and view reset
 - body-only and full-scene point-cloud modes
+- ASCII PLY export for Blender, MeshLab and other 3D tools
 - adjustable smoothing responsiveness
 - JSON recording of raw and smoothed joints
 - PNG capture of the application window
@@ -35,8 +36,11 @@ Open the **3D POINT CLOUD** tab in the right-hand panel:
 - use the mouse wheel to zoom
 - toggle **Body-only rendering** to switch between the tracked person and the visible room
 - use **Reset 3D view** to return to the Kinect camera angle
+- use **Export PLY** to save the current body or room cloud in real camera-space metres
 
 The renderer uses the Kinect SDK coordinate mapper to convert each sampled depth pixel into a real camera-space `X/Y/Z` point. The first version is software-rendered and dependency-free so it can stay compatible with the SDK 1.8 x86 application.
+
+PLY exports include per-vertex RGB values. Tracked-player points use the cyan hologram palette and room points use a depth-based colour gradient.
 
 ## Tracking colours
 
@@ -83,8 +87,9 @@ You can also build from PowerShell after installing Visual Studio:
 Runtime files are written beside the executable and ignored by Git:
 
 ```text
-captures/
-recordings/
+captures/    PNG interface snapshots
+recordings/  timestamped .krs.json skeleton sessions
+exports/     body or scene .ply point clouds
 ```
 
 Skeleton recordings use the `.krs.json` extension. Each frame stores the raw Kinect coordinates, the smoothed coordinates, tracking state and whether the enhanced joint was temporarily predicted.
@@ -103,7 +108,8 @@ The report shows duration, average frame rate, raw-to-smoothed correction distan
 Kinect RGB stream ───────────────> live camera panel
 Kinect depth + player index ─────> depth hologram renderer
                  └───────────────> camera-space X/Y/Z mapping
-                                    └────────> interactive 3D point cloud
+                                    ├────────> interactive 3D point cloud
+                                    └────────> PLY exporter
 Kinect skeleton ─────────────────> raw skeleton
                   └──────────────> temporal smoother and short occlusion hold
                                    └────────> enhanced skeleton + JSON recorder
@@ -119,7 +125,7 @@ A successful CI compile does not prove that the physical sensor or Kinect runtim
 
 - velocity-aware One Euro or Kalman filtering
 - replay and side-by-side tracking comparison
-- colour-mapped and exportable point clouds
+- RGB-aligned point-cloud colouring
 - Kinect depth mapped onto RGB pose landmarks
 - modern pose model integration through ONNX Runtime
 - confidence-weighted fusion between Kinect and AI estimates
