@@ -6,7 +6,7 @@ The long-term goal is to combine the Kinect's RGB, depth and skeleton streams wi
 
 ## Current prototype
 
-The first WPF prototype includes:
+The WPF prototype includes:
 
 - Kinect SDK 1.8 sensor discovery and startup
 - RGB camera feed at 640 x 480
@@ -17,12 +17,26 @@ The first WPF prototype includes:
 - short joint hold when tracking is briefly lost
 - tracked, inferred and predicted joint colours
 - body-only depth hologram render using the Kinect player mask
+- live camera-space 3D point-cloud renderer
+- mouse-drag orbit, mouse-wheel zoom and view reset
+- body-only and full-scene point-cloud modes
 - adjustable smoothing responsiveness
 - JSON recording of raw and smoothed joints
 - PNG capture of the application window
-- live FPS and joint tracking status
+- live FPS, tracking status and sampled point count
 
 The prototype deliberately starts without a large AI dependency. It creates a measurable baseline before pose-model fusion is added.
+
+## 3D controls
+
+Open the **3D POINT CLOUD** tab in the right-hand panel:
+
+- drag with the left mouse button to orbit the live depth cloud
+- use the mouse wheel to zoom
+- toggle **Body-only rendering** to switch between the tracked person and the visible room
+- use **Reset 3D view** to return to the Kinect camera angle
+
+The renderer uses the Kinect SDK coordinate mapper to convert each sampled depth pixel into a real camera-space `X/Y/Z` point. The first version is software-rendered and dependency-free so it can stay compatible with the SDK 1.8 x86 application.
 
 ## Tracking colours
 
@@ -87,10 +101,12 @@ The report shows duration, average frame rate, raw-to-smoothed correction distan
 
 ```text
 Kinect RGB stream ───────────────> live camera panel
-Kinect depth + player index ─────> body-only hologram renderer
+Kinect depth + player index ─────> depth hologram renderer
+                 └───────────────> camera-space X/Y/Z mapping
+                                    └────────> interactive 3D point cloud
 Kinect skeleton ─────────────────> raw skeleton
                   └──────────────> temporal smoother and short occlusion hold
-                                  └────────> enhanced skeleton + JSON recorder
+                                   └────────> enhanced skeleton + JSON recorder
 ```
 
 ## Continuous integration
@@ -103,7 +119,7 @@ A successful CI compile does not prove that the physical sensor or Kinect runtim
 
 - velocity-aware One Euro or Kalman filtering
 - replay and side-by-side tracking comparison
-- 3D point-cloud body renderer
+- colour-mapped and exportable point clouds
 - Kinect depth mapped onto RGB pose landmarks
 - modern pose model integration through ONNX Runtime
 - confidence-weighted fusion between Kinect and AI estimates
