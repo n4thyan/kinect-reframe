@@ -2,18 +2,22 @@
 
 ## Phase 0: hardware baseline
 
-Status: in progress
+Status: implementation complete, physical validation pending
 
 - confirm Kinect SDK 1.8 colour, depth and skeleton streams
 - support seated and default tracking modes
 - display player-index body segmentation
 - report frame rate and tracked/inferred joint counts
+- provide a clean RGB camera view with optional overlays
+- add mirror, freeze, grid, focus, brightness and contrast controls
 
 Acceptance criteria:
 
 - the application starts with one Xbox 360 Kinect connected
 - RGB, depth and skeleton data run together at interactive speed
 - seated mode can be switched without restarting the application
+- skeleton and heatmap overlays start hidden
+- every visual layer has an obvious on/off state
 
 ## Phase 1: measurable tracking improvements
 
@@ -34,6 +38,8 @@ Acceptance criteria:
 - predicted joints are visually distinct from measured joints
 
 ## Phase 2: body rendering
+
+Status: initial point-cloud renderer included, hardware validation pending
 
 - replace the 2D depth hologram with a real 3D point cloud
 - map depth pixels into camera-space coordinates
@@ -77,9 +83,12 @@ Acceptance criteria:
 
 ## Phase 5: experiments
 
+Status: motion and depth heatmaps implemented; remaining experiments planned
+
 - ghost replay
 - hand and body motion trails
-- movement heatmaps
+- motion-history heatmap
+- depth-distance heatmap
 - room point-cloud capture
 - labelled motion dataset collection
 - trainable personal gestures
@@ -88,6 +97,7 @@ Acceptance criteria:
 
 - medical diagnosis or rehabilitation scoring
 - claiming hidden limbs are directly tracked
+- thermal-imaging claims from the Kinect infrared/depth sensor
 - background surveillance
 - cloud processing by default
 - replacing the Kinect runtime before the baseline is understood
