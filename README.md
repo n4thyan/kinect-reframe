@@ -12,8 +12,7 @@ The WPF prototype includes:
 - RGB camera feed at 640 x 480
 - depth feed at 320 x 240
 - seated and full-body skeleton modes
-- raw Kinect skeleton overlay
-- custom temporally smoothed skeleton overlay
+- optional raw and temporally smoothed skeleton overlays
 - short joint hold when tracking is briefly lost
 - tracked, inferred and predicted joint colours
 - body-only depth hologram render using the Kinect player mask
@@ -21,12 +20,41 @@ The WPF prototype includes:
 - mouse-drag orbit, mouse-wheel zoom and view reset
 - body-only and full-scene point-cloud modes
 - ASCII PLY export for Blender, MeshLab and other 3D tools
-- adjustable smoothing responsiveness
+- motion-history and depth-distance heatmaps
+- mirror, freeze, framing grid and camera-focus controls
+- software brightness and contrast adjustment
+- separate application and clean camera-frame screenshots
+- adjustable smoothing and motion sensitivity
 - JSON recording of raw and smoothed joints
-- PNG capture of the application window
 - live FPS, tracking status and sampled point count
 
+The skeleton and both heatmap overlays start **off**, leaving a clean camera view. Every visual layer uses a clear on/off pill toggle.
+
 The prototype deliberately starts without a large AI dependency. It creates a measurable baseline before pose-model fusion is added.
+
+## Camera and overlay controls
+
+| Control | Purpose |
+| --- | --- |
+| Skeleton | Shows the enhanced skeleton overlay. Off by default. |
+| Raw skeleton | Adds the unfiltered Kinect skeleton for comparison. |
+| Motion heat | Shows recent depth movement and fading trails. |
+| Depth heat | Colours pixels by measured distance from the Kinect. |
+| Mirror | Flips the entire camera composition, including overlays. |
+| Freeze | Holds the current RGB, depth and tracking frame. |
+| Grid | Adds rule-of-thirds guides and a centre marker. |
+| Focus camera | Hides the right renderer panel and enlarges the camera. |
+| Body-only renders | Excludes untracked room pixels from heatmaps and 3D renders. |
+| Seated tracking | Uses Kinect SDK seated upper-body tracking. |
+
+Brightness and contrast are display-only adjustments. They do not alter the Kinect's hardware exposure or the data saved in skeleton recordings.
+
+The heatmaps are **not thermal imaging**. Xbox 360 Kinect cannot measure body temperature:
+
+- motion heat shows depth change over time
+- depth heat shows distance from the sensor
+
+Use **Clear heat** to remove accumulated motion trails and **Reset camera** to restore the neutral camera view.
 
 ## 3D controls
 
@@ -34,8 +62,8 @@ Open the **3D POINT CLOUD** tab in the right-hand panel:
 
 - drag with the left mouse button to orbit the live depth cloud
 - use the mouse wheel to zoom
-- toggle **Body-only rendering** to switch between the tracked person and the visible room
-- use **Reset 3D view** to return to the Kinect camera angle
+- toggle **Body-only renders** to switch between the tracked person and the visible room
+- use **Reset 3D** to return to the Kinect camera angle
 - use **Export PLY** to save the current body or room cloud in real camera-space metres
 
 The renderer uses the Kinect SDK coordinate mapper to convert each sampled depth pixel into a real camera-space `X/Y/Z` point. The first version is software-rendered and dependency-free so it can stay compatible with the SDK 1.8 x86 application.
@@ -87,7 +115,7 @@ You can also build from PowerShell after installing Visual Studio:
 Runtime files are written beside the executable and ignored by Git:
 
 ```text
-captures/    PNG interface snapshots
+captures/    PNG application and camera-frame snapshots
 recordings/  timestamped .krs.json skeleton sessions
 exports/     body or scene .ply point clouds
 ```
@@ -105,14 +133,15 @@ The report shows duration, average frame rate, raw-to-smoothed correction distan
 ## Architecture
 
 ```text
-Kinect RGB stream ───────────────> live camera panel
-Kinect depth + player index ─────> depth hologram renderer
+Kinect RGB stream ───────────────> camera adjustments + clean camera panel
+Kinect depth + player index ─────> depth hologram
+                 ├───────────────> motion/depth heatmap overlays
                  └───────────────> camera-space X/Y/Z mapping
-                                    ├────────> interactive 3D point cloud
-                                    └────────> PLY exporter
+                                     ├────────> interactive 3D point cloud
+                                     └────────> PLY exporter
 Kinect skeleton ─────────────────> raw skeleton
                   └──────────────> temporal smoother and short occlusion hold
-                                   └────────> enhanced skeleton + JSON recorder
+                                   └────────> optional overlay + JSON recorder
 ```
 
 ## Continuous integration
