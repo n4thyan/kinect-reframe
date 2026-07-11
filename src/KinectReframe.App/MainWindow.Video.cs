@@ -63,6 +63,19 @@ namespace KinectReframe
         {
             try
             {
+                if (source == VideoCaptureSource.Camera)
+                {
+                    SelectPreviewMode(StudioPreviewMode.Camera);
+                }
+                else if (source == VideoCaptureSource.DepthRender)
+                {
+                    SelectPreviewMode(StudioPreviewMode.Depth);
+                }
+                else
+                {
+                    SelectPreviewMode(StudioPreviewMode.PointCloud);
+                }
+
                 double scale = OutputScaleSlider == null ? 1.0 : OutputScaleSlider.Value;
                 scale = Math.Max(0.5, Math.Min(3.0, scale));
                 activeVideoWidth = Math.Max(2, (int)Math.Round(640.0 * scale));
@@ -93,12 +106,14 @@ namespace KinectReframe
                 SetVideoRecordingUi(true);
                 CaptureCurrentVideoFrame();
                 TrackingStatusText.Text = "Recording " + GetVideoDisplayName(source) + " to " + path;
+                StatusBarMessageText.Text = "Recording " + GetVideoDisplayName(source);
             }
             catch (Exception exception)
             {
                 activeVideoSource = VideoCaptureSource.None;
                 SetVideoRecordingUi(false);
                 TrackingStatusText.Text = "Could not start video recording: " + exception.Message;
+                StatusBarMessageText.Text = "Recording could not start";
             }
         }
 
@@ -190,12 +205,14 @@ namespace KinectReframe
             if (result.Error != null)
             {
                 TrackingStatusText.Text = "Video recording failed: " + result.Error.Message;
+                StatusBarMessageText.Text = "Video recording failed";
                 return;
             }
 
             if (result.FramesWritten <= 0)
             {
                 TrackingStatusText.Text = "No video frames were written";
+                StatusBarMessageText.Text = "No video frames written";
                 return;
             }
 
@@ -205,6 +222,10 @@ namespace KinectReframe
                 result.FramesWritten,
                 result.DroppedFrames,
                 result.Path);
+            StatusBarMessageText.Text = string.Format(
+                "Saved {0:N0} frames • {1:N0} dropped",
+                result.FramesWritten,
+                result.DroppedFrames);
         }
 
         private void SetVideoRecordingUi(bool recording)
@@ -214,6 +235,11 @@ namespace KinectReframe
             VideoFpsSlider.IsEnabled = !recording;
             VideoQualitySlider.IsEnabled = !recording;
             FreezeToggle.IsEnabled = !recording;
+            SceneList.IsEnabled = !recording;
+            CameraPreviewModeButton.IsEnabled = !recording;
+            DepthPreviewModeButton.IsEnabled = !recording;
+            PointCloudPreviewModeButton.IsEnabled = !recording;
+            SplitPreviewModeButton.IsEnabled = !recording;
 
             bool cameraRecording = recording && activeVideoSource == VideoCaptureSource.Camera;
             bool renderRecording = recording && !cameraRecording;
@@ -226,7 +252,7 @@ namespace KinectReframe
 
             if (recording)
             {
-                SolidColorBrush stopBrush = new SolidColorBrush(Color.FromRgb(239, 115, 115));
+                SolidColorBrush stopBrush = new SolidColorBrush(Color.FromRgb(215, 90, 98));
                 if (cameraRecording)
                 {
                     CameraVideoButton.Background = stopBrush;
