@@ -67,6 +67,7 @@
     <Compile Include="Rendering\BodyDepthRenderer.cs" />
     <Compile Include="Rendering\PointCloudRenderer.cs" />
     <Compile Include="Rendering\SkeletonRenderer.cs" />
+    <Compile Include="Services\PointCloudExporter.cs" />
     <Compile Include="Services\SessionRecorder.cs" />
     <Compile Include="Tracking\JointSmoother.cs" />
     <Compile Include="Tracking\RecordingModels.cs" />
