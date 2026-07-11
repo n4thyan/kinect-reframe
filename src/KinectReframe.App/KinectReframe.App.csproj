@@ -65,6 +65,9 @@
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="MainWindow.LegacyCompatibility.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MainWindow.Product.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
