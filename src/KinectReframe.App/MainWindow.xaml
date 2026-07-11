@@ -2,320 +2,492 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Kinect Reframe"
-        Width="1450"
-        Height="970"
-        MinWidth="1080"
-        MinHeight="780"
+        Width="1540"
+        Height="940"
+        MinWidth="1180"
+        MinHeight="760"
         Background="{StaticResource WindowBackgroundBrush}"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
         Closing="Window_Closing"
         Closed="Window_Closed">
-    <Grid x:Name="RootVisual" Margin="20">
+    <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="16" />
+            <RowDefinition Height="28" />
+            <RowDefinition Height="52" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="16" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="176" />
+            <RowDefinition Height="26" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+        <Menu Grid.Row="0">
+            <MenuItem Header="_File">
+                <MenuItem Header="Open output folder" Click="OpenOutputFolderButton_Click" />
+                <Separator />
+                <MenuItem Header="Save app snapshot" Click="SnapshotButton_Click" />
+                <MenuItem Header="Save camera output" Click="CameraSnapshotButton_Click" />
+                <Separator />
+                <MenuItem Header="Exit" Click="ExitMenuItem_Click" />
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="Camera preview" Tag="Camera" Click="PreviewModeMenu_Click" />
+                <MenuItem Header="Depth preview" Tag="Depth" Click="PreviewModeMenu_Click" />
+                <MenuItem Header="3D preview" Tag="PointCloud" Click="PreviewModeMenu_Click" />
+                <MenuItem Header="Split preview" Tag="Split" Click="PreviewModeMenu_Click" />
+            </MenuItem>
+            <MenuItem Header="_Tools">
+                <MenuItem Header="Reset camera" Click="ResetCameraButton_Click" />
+                <MenuItem Header="Reset tracking" Click="ResetFiltersButton_Click" />
+                <MenuItem Header="Reset 3D view" Click="ResetPointCloudViewButton_Click" />
+                <Separator />
+                <MenuItem Header="Clear motion heat" Click="ClearHeatmapButton_Click" />
+            </MenuItem>
+        </Menu>
 
-            <StackPanel>
-                <TextBlock Text="KINECT REFRAME" FontSize="26" FontWeight="Bold" />
-                <TextBlock Text="Xbox 360 Kinect tracking, depth rendering and camera lab"
-                           Foreground="{StaticResource MutedTextBrush}"
-                           Margin="0,4,0,0" />
-            </StackPanel>
-
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Border x:Name="VideoStatusBadge"
-                        Background="#2A191C"
-                        BorderBrush="#6C3038"
-                        BorderThickness="1"
-                        CornerRadius="4"
-                        Padding="12,8"
-                        Margin="0,0,10,0"
-                        Visibility="Collapsed">
-                    <StackPanel Orientation="Horizontal">
-                        <Ellipse Width="10" Height="10" Fill="#EF7373" Margin="0,0,8,0" />
-                        <TextBlock x:Name="VideoStatusText" Text="REC 00:00" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Border>
-
-                <Border Background="{StaticResource PanelBrush}"
-                        BorderBrush="{StaticResource PanelBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="4"
-                        Padding="12,8">
-                    <StackPanel Orientation="Horizontal">
-                        <Ellipse x:Name="ConnectionIndicator" Width="10" Height="10" Fill="#D85858" Margin="0,0,8,0" />
-                        <TextBlock x:Name="ConnectionText" Text="Waiting for sensor" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-        </Grid>
-
-        <Grid x:Name="MainContentGrid" Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*" />
-                <ColumnDefinition x:Name="RightPanelSpacerColumn" Width="16" />
-                <ColumnDefinition x:Name="RightPanelColumn" Width="2*" />
-            </Grid.ColumnDefinitions>
-
-            <Border x:Name="CameraViewport"
-                    Grid.Column="0"
-                    Background="#050607"
-                    BorderBrush="{StaticResource PanelBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    ClipToBounds="True">
-                <Grid>
-                    <Viewbox Stretch="Uniform">
-                        <Grid x:Name="CameraSurface" Width="640" Height="480" RenderTransformOrigin="0.5,0.5">
-                            <Image x:Name="ColorImage" Width="640" Height="480" Stretch="Fill" />
-                            <Image x:Name="DepthHeatmapImage"
-                                   Width="640"
-                                   Height="480"
-                                   Stretch="Fill"
-                                   Opacity="0.72"
-                                   Visibility="Collapsed"
-                                   RenderOptions.BitmapScalingMode="NearestNeighbor" />
-                            <Image x:Name="MotionHeatmapImage"
-                                   Width="640"
-                                   Height="480"
-                                   Stretch="Fill"
-                                   Opacity="0.82"
-                                   Visibility="Collapsed"
-                                   RenderOptions.BitmapScalingMode="NearestNeighbor" />
-                            <Canvas x:Name="SkeletonCanvas"
-                                    Width="640"
-                                    Height="480"
-                                    Visibility="Collapsed"
-                                    IsHitTestVisible="False" />
-                            <Canvas x:Name="GridOverlayCanvas"
-                                    Width="640"
-                                    Height="480"
-                                    Visibility="Collapsed"
-                                    IsHitTestVisible="False"
-                                    Opacity="0.55">
-                                <Line X1="213" Y1="0" X2="213" Y2="480" Stroke="#D9FFFFFF" StrokeThickness="1" />
-                                <Line X1="427" Y1="0" X2="427" Y2="480" Stroke="#D9FFFFFF" StrokeThickness="1" />
-                                <Line X1="0" Y1="160" X2="640" Y2="160" Stroke="#D9FFFFFF" StrokeThickness="1" />
-                                <Line X1="0" Y1="320" X2="640" Y2="320" Stroke="#D9FFFFFF" StrokeThickness="1" />
-                                <Line X1="300" Y1="240" X2="340" Y2="240" Stroke="#D9FFFFFF" StrokeThickness="1" />
-                                <Line X1="320" Y1="220" X2="320" Y2="260" Stroke="#D9FFFFFF" StrokeThickness="1" />
-                            </Canvas>
-                        </Grid>
-                    </Viewbox>
-
-                    <Border HorizontalAlignment="Left"
-                            VerticalAlignment="Top"
-                            Background="#B0101318"
-                            Padding="10,6"
-                            Margin="10">
-                        <TextBlock x:Name="CameraModeText" Text="RGB CAMERA" FontSize="12" FontWeight="SemiBold" />
-                    </Border>
-
-                    <Border x:Name="FreezeBadge"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Top"
-                            Background="#D9D85858"
-                            Padding="12,6"
-                            Margin="10"
-                            Visibility="Collapsed">
-                        <TextBlock Text="FRAME FROZEN" FontWeight="Bold" />
-                    </Border>
-                </Grid>
-            </Border>
-
-            <Border x:Name="RightPanelBorder"
-                    Grid.Column="2"
-                    Background="#030A0B"
-                    BorderBrush="{StaticResource PanelBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    ClipToBounds="True">
-                <TabControl x:Name="RendererTabs" Background="#030A0B" BorderThickness="0">
-                    <TabItem Header="DEPTH HOLOGRAM">
-                        <Grid x:Name="DepthRenderSurface" Background="#030A0B">
-                            <Image x:Name="BodyImage"
-                                   Stretch="Uniform"
-                                   RenderOptions.BitmapScalingMode="NearestNeighbor" />
-                            <Border HorizontalAlignment="Left"
-                                    VerticalAlignment="Top"
-                                    Background="#B0101318"
-                                    Padding="10,6"
-                                    Margin="10">
-                                <TextBlock Text="PLAYER-INDEXED DEPTH" FontSize="12" FontWeight="SemiBold" />
-                            </Border>
-                            <TextBlock x:Name="NoBodyText"
-                                       Text="Move into view"
-                                       Foreground="{StaticResource MutedTextBrush}"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       FontSize="20" />
-                        </Grid>
-                    </TabItem>
-
-                    <TabItem Header="3D POINT CLOUD">
-                        <Grid x:Name="PointCloudViewport"
-                              Background="#020607"
-                              Cursor="SizeAll"
-                              MouseLeftButtonDown="PointCloudViewport_MouseLeftButtonDown"
-                              MouseLeftButtonUp="PointCloudViewport_MouseLeftButtonUp"
-                              MouseMove="PointCloudViewport_MouseMove"
-                              MouseWheel="PointCloudViewport_MouseWheel">
-                            <Image x:Name="PointCloudImage"
-                                   Stretch="Uniform"
-                                   RenderOptions.BitmapScalingMode="NearestNeighbor" />
-                            <Border HorizontalAlignment="Left"
-                                    VerticalAlignment="Top"
-                                    Background="#B0101318"
-                                    Padding="10,6"
-                                    Margin="10">
-                                <TextBlock Text="LIVE CAMERA-SPACE POINT CLOUD" FontSize="12" FontWeight="SemiBold" />
-                            </Border>
-                            <Border HorizontalAlignment="Right"
-                                    VerticalAlignment="Bottom"
-                                    Background="#B0101318"
-                                    Padding="10,7"
-                                    Margin="10">
-                                <StackPanel>
-                                    <TextBlock Text="Drag to orbit • wheel to zoom" FontSize="11" />
-                                    <TextBlock x:Name="PointCloudViewText"
-                                               Text="Yaw 0°  Pitch 0°  Zoom 1.00x"
-                                               Foreground="{StaticResource MutedTextBrush}"
-                                               FontSize="11"
-                                               Margin="0,3,0,0" />
-                                    <TextBlock x:Name="PointCloudCountText"
-                                               Text="0 rendered points"
-                                               Foreground="{StaticResource MutedTextBrush}"
-                                               FontSize="11" />
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                    </TabItem>
-                </TabControl>
-            </Border>
-        </Grid>
-
-        <Border Grid.Row="4"
-                Background="{StaticResource PanelBrush}"
+        <Border Grid.Row="1"
+                Background="#1B1D21"
                 BorderBrush="{StaticResource PanelBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="4"
-                Padding="14">
+                BorderThickness="0,0,0,1"
+                Padding="14,8">
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="6" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="6" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="6" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="8" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                <WrapPanel Grid.Row="0" VerticalAlignment="Center">
-                    <ToggleButton x:Name="SkeletonToggle" Content="Skeleton" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
-                    <ToggleButton x:Name="RawSkeletonToggle" Content="Raw skeleton" Style="{StaticResource PillToggleStyle}" IsChecked="False" IsEnabled="False" />
-                    <ToggleButton x:Name="MotionHeatToggle" Content="Motion heat" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="HeatmapToggle_Changed" Unchecked="HeatmapToggle_Changed" />
-                    <ToggleButton x:Name="DepthHeatToggle" Content="Depth heat" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="HeatmapToggle_Changed" Unchecked="HeatmapToggle_Changed" />
-                    <ToggleButton x:Name="MirrorToggle" Content="Mirror" Style="{StaticResource PillToggleStyle}" IsChecked="True" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
-                    <ToggleButton x:Name="FreezeToggle" Content="Freeze" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
-                    <ToggleButton x:Name="GridToggle" Content="Grid" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
-                    <ToggleButton x:Name="FocusCameraToggle" Content="Focus camera" Style="{StaticResource PillToggleStyle}" IsChecked="False" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
-                    <ToggleButton x:Name="BodyOnlyToggle" Content="Body-only renders" Style="{StaticResource PillToggleStyle}" IsChecked="True" />
-                    <ToggleButton x:Name="SeatedModeToggle" Content="Seated tracking" Style="{StaticResource PillToggleStyle}" IsChecked="True" Checked="SeatedModeToggle_Changed" Unchecked="SeatedModeToggle_Changed" />
-                </WrapPanel>
-
-                <WrapPanel Grid.Row="2" VerticalAlignment="Center">
-                    <TextBlock Text="Brightness" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <Slider x:Name="BrightnessSlider" Width="105" Minimum="-80" Maximum="80" Value="0" ValueChanged="CameraAdjustmentSlider_Changed" />
-                    <TextBlock x:Name="BrightnessValueText" Text="0" Width="34" VerticalAlignment="Center" />
-                    <TextBlock Text="Contrast" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="ContrastSlider" Width="105" Minimum="0.6" Maximum="1.6" Value="1" ValueChanged="CameraAdjustmentSlider_Changed" />
-                    <TextBlock x:Name="ContrastValueText" Text="1.00" Width="42" VerticalAlignment="Center" />
-                    <TextBlock Text="Smoothing" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="SmoothingSlider" Width="105" Minimum="0.08" Maximum="1" Value="0.35" ValueChanged="SmoothingSlider_ValueChanged" />
-                    <TextBlock x:Name="SmoothingValueText" Text="0.35" Width="42" VerticalAlignment="Center" />
-                    <TextBlock Text="Motion threshold" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="MotionThresholdSlider" Width="105" Minimum="10" Maximum="180" Value="35" ValueChanged="HeatmapSlider_Changed" />
-                    <TextBlock x:Name="MotionThresholdValueText" Text="35 mm" Width="55" VerticalAlignment="Center" />
-                    <TextBlock Text="Trail" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="MotionPersistenceSlider" Width="105" Minimum="0.75" Maximum="0.995" Value="0.94" ValueChanged="HeatmapSlider_Changed" />
-                    <TextBlock x:Name="MotionPersistenceValueText" Text="0.940" Width="48" VerticalAlignment="Center" />
-                </WrapPanel>
-
-                <WrapPanel Grid.Row="4" VerticalAlignment="Center">
-                    <TextBlock Text="3D detail" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <Slider x:Name="PointCloudDetailSlider" Width="105" Minimum="1" Maximum="4" Value="4" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="RenderSettingSlider_Changed" />
-                    <TextBlock x:Name="PointCloudDetailValueText" Text="4" Width="28" VerticalAlignment="Center" />
-                    <TextBlock Text="Point size" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="PointCloudPointSizeSlider" Width="105" Minimum="1" Maximum="4" Value="2" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="RenderSettingSlider_Changed" />
-                    <TextBlock x:Name="PointCloudPointSizeValueText" Text="2" Width="28" VerticalAlignment="Center" />
-                    <ToggleButton x:Name="PointCloudShadingToggle" Content="3D shading" ToolTip="Uses neighbouring depth points to reveal surface shape" Style="{StaticResource PillToggleStyle}" IsChecked="True" />
-                    <TextBlock Text="Output scale" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="OutputScaleSlider" Width="130" Minimum="0.5" Maximum="3" Value="1" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="OutputScaleSlider_Changed" />
-                    <TextBlock x:Name="OutputResolutionText" Text="640 × 480 (1.0x)" Width="130" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" />
-                </WrapPanel>
-
-                <WrapPanel Grid.Row="6" VerticalAlignment="Center">
-                    <TextBlock Text="Video FPS" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <Slider x:Name="VideoFpsSlider" Width="105" Minimum="5" Maximum="30" Value="15" TickFrequency="5" IsSnapToTickEnabled="True" ValueChanged="VideoSettingSlider_Changed" />
-                    <TextBlock x:Name="VideoFpsValueText" Text="15" Width="34" VerticalAlignment="Center" />
-                    <TextBlock Text="JPEG quality" VerticalAlignment="Center" Margin="12,0,8,0" />
-                    <Slider x:Name="VideoQualitySlider" Width="105" Minimum="50" Maximum="95" Value="82" TickFrequency="1" ValueChanged="VideoSettingSlider_Changed" />
-                    <TextBlock x:Name="VideoQualityValueText" Text="82" Width="34" VerticalAlignment="Center" />
-                    <TextBlock Text="MJPEG AVI • video only • frames drop rather than blocking Kinect"
-                               Foreground="{StaticResource MutedTextBrush}"
-                               VerticalAlignment="Center"
-                               Margin="14,0,0,0" />
-                </WrapPanel>
-
-                <Grid Grid.Row="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <WrapPanel>
-                        <Button x:Name="CameraVideoButton" Content="Record camera video" Click="CameraVideoButton_Click" />
-                        <Button x:Name="RenderVideoButton" Content="Record render video" Click="RenderVideoButton_Click" />
-                        <Button x:Name="RecordButton" Content="Record tracking data" Click="RecordButton_Click" />
-                        <Button Content="Save app snapshot" Click="SnapshotButton_Click" />
-                        <Button Content="Save camera output" Click="CameraSnapshotButton_Click" />
-                        <Button Content="Open output folder" Click="OpenOutputFolderButton_Click" Background="#DCE6EA" />
-                        <Button Content="Export PLY" Click="ExportPointCloudButton_Click" />
-                        <Button Content="Clear heat" Click="ClearHeatmapButton_Click" Background="#DCE6EA" />
-                        <Button Content="Reset camera" Click="ResetCameraButton_Click" Background="#DCE6EA" />
-                        <Button Content="Reset tracking" Click="ResetFiltersButton_Click" Background="#DCE6EA" />
-                        <Button Content="Reset 3D" Click="ResetPointCloudViewButton_Click" Background="#DCE6EA" />
-                    </WrapPanel>
-
-                    <TextBlock Grid.Column="1"
-                               x:Name="TrackingStatusText"
-                               Text="No skeleton tracked"
-                               Foreground="{StaticResource MutedTextBrush}"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Center"
-                               TextTrimming="CharacterEllipsis"
-                               Margin="10,0" />
-
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="FPS " Foreground="{StaticResource MutedTextBrush}" />
-                        <TextBlock x:Name="FpsText" Text="0" FontWeight="SemiBold" />
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="30" Height="30" Background="#365F9F" CornerRadius="2" Margin="0,0,10,0">
+                        <TextBlock Text="KR" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Kinect Reframe" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Text="Tracking and depth studio" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
                     </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border x:Name="VideoStatusBadge"
+                            Background="#2B1F22"
+                            BorderBrush="#6C3038"
+                            BorderThickness="1"
+                            CornerRadius="2"
+                            Padding="10,6"
+                            Margin="0,0,8,0"
+                            Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Fill="#EF7373" Margin="0,0,7,0" />
+                            <TextBlock x:Name="VideoStatusText" Text="REC 00:00" VerticalAlignment="Center" FontSize="12" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{StaticResource PanelRaisedBrush}"
+                            BorderBrush="{StaticResource PanelBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="2"
+                            Padding="10,6">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse x:Name="ConnectionIndicator" Width="8" Height="8" Fill="#D85858" Margin="0,0,7,0" />
+                            <TextBlock x:Name="ConnectionText" Text="Waiting for sensor" VerticalAlignment="Center" FontSize="12" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230" MinWidth="180" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="*" MinWidth="500" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="310" MinWidth="260" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource StudioPanelStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="32" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="1" />
+                        <RowDefinition Height="32" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Background="{StaticResource PanelRaisedBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="0,0,0,1" Padding="10,0">
+                        <TextBlock Text="SCENES" Style="{StaticResource PanelHeaderStyle}" VerticalAlignment="Center" />
+                    </Border>
+
+                    <ListBox x:Name="SceneList"
+                             Grid.Row="1"
+                             Margin="5"
+                             SelectedIndex="0"
+                             SelectionChanged="SceneList_SelectionChanged">
+                        <ListBoxItem Content="Clean Camera" Tag="CleanCamera" />
+                        <ListBoxItem Content="Skeleton Tracking" Tag="Skeleton" />
+                        <ListBoxItem Content="Motion Heatmap" Tag="MotionHeat" />
+                        <ListBoxItem Content="Depth Heatmap" Tag="DepthHeat" />
+                        <ListBoxItem Content="Depth Hologram" Tag="DepthHologram" />
+                        <ListBoxItem Content="3D Point Cloud" Tag="PointCloud" />
+                        <ListBoxItem Content="Camera + 3D" Tag="Split" />
+                        <ListBoxItem Content="Tracking Debug" Tag="TrackingDebug" />
+                    </ListBox>
+
+                    <Border Grid.Row="2" Background="{StaticResource PanelBorderBrush}" />
+
+                    <Border Grid.Row="3" Background="{StaticResource PanelRaisedBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="0,0,0,1" Padding="10,0">
+                        <TextBlock Text="SOURCES" Style="{StaticResource PanelHeaderStyle}" VerticalAlignment="Center" />
+                    </Border>
+
+                    <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" Padding="5">
+                        <StackPanel>
+                            <Border Background="#191B20" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="2" Padding="9,7" Margin="0,0,0,3">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="18" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="●" Foreground="{StaticResource SuccessBrush}" FontSize="9" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="Kinect RGB" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="BASE" Foreground="{StaticResource SubtleTextBrush}" FontSize="9" VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+
+                            <ToggleButton x:Name="SkeletonToggle"
+                                          Content="Skeleton overlay"
+                                          Style="{StaticResource SourceToggleStyle}"
+                                          IsChecked="False"
+                                          Checked="VisualToggle_Changed"
+                                          Unchecked="VisualToggle_Changed" />
+                            <ToggleButton x:Name="RawSkeletonToggle"
+                                          Content="Raw skeleton"
+                                          Style="{StaticResource SourceToggleStyle}"
+                                          IsChecked="False"
+                                          IsEnabled="False" />
+                            <ToggleButton x:Name="MotionHeatToggle"
+                                          Content="Motion heat"
+                                          Style="{StaticResource SourceToggleStyle}"
+                                          IsChecked="False"
+                                          Checked="HeatmapToggle_Changed"
+                                          Unchecked="HeatmapToggle_Changed" />
+                            <ToggleButton x:Name="DepthHeatToggle"
+                                          Content="Depth heat"
+                                          Style="{StaticResource SourceToggleStyle}"
+                                          IsChecked="False"
+                                          Checked="HeatmapToggle_Changed"
+                                          Unchecked="HeatmapToggle_Changed" />
+                            <ToggleButton x:Name="GridToggle"
+                                          Content="Framing grid"
+                                          Style="{StaticResource SourceToggleStyle}"
+                                          IsChecked="False"
+                                          Checked="VisualToggle_Changed"
+                                          Unchecked="VisualToggle_Changed" />
+                        </StackPanel>
+                    </ScrollViewer>
                 </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent" />
+
+            <Border Grid.Column="2" Style="{StaticResource StudioPanelStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="38" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Background="{StaticResource PanelRaisedBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="0,0,0,1" Padding="9,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="PREVIEW" Style="{StaticResource PanelHeaderStyle}" Margin="0,0,10,0" />
+                                <TextBlock x:Name="PreviewDescriptionText" Text="Camera composition" Foreground="{StaticResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <ToggleButton x:Name="CameraPreviewModeButton" Content="Camera" Tag="Camera" Style="{StaticResource ModeToggleStyle}" IsChecked="True" Checked="PreviewModeButton_Checked" />
+                                <ToggleButton x:Name="DepthPreviewModeButton" Content="Depth" Tag="Depth" Style="{StaticResource ModeToggleStyle}" Checked="PreviewModeButton_Checked" />
+                                <ToggleButton x:Name="PointCloudPreviewModeButton" Content="3D" Tag="PointCloud" Style="{StaticResource ModeToggleStyle}" Checked="PreviewModeButton_Checked" />
+                                <ToggleButton x:Name="SplitPreviewModeButton" Content="Split" Tag="Split" Style="{StaticResource ModeToggleStyle}" Checked="PreviewModeButton_Checked" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Grid x:Name="MainContentGrid" Grid.Row="1" Background="{StaticResource WorkspaceBrush}" Margin="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="CameraPreviewColumn" Width="3*" />
+                            <ColumnDefinition x:Name="RightPanelSpacerColumn" Width="8" />
+                            <ColumnDefinition x:Name="RightPanelColumn" Width="2*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border x:Name="CameraViewport"
+                                Grid.Column="0"
+                                Background="#050607"
+                                BorderBrush="#2C3037"
+                                BorderThickness="1"
+                                ClipToBounds="True">
+                            <Grid>
+                                <Viewbox Stretch="Uniform">
+                                    <Grid x:Name="CameraSurface" Width="640" Height="480" RenderTransformOrigin="0.5,0.5">
+                                        <Image x:Name="ColorImage" Width="640" Height="480" Stretch="Fill" />
+                                        <Image x:Name="DepthHeatmapImage" Width="640" Height="480" Stretch="Fill" Opacity="0.72" Visibility="Collapsed" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                        <Image x:Name="MotionHeatmapImage" Width="640" Height="480" Stretch="Fill" Opacity="0.82" Visibility="Collapsed" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                        <Canvas x:Name="SkeletonCanvas" Width="640" Height="480" Visibility="Collapsed" IsHitTestVisible="False" />
+                                        <Canvas x:Name="GridOverlayCanvas" Width="640" Height="480" Visibility="Collapsed" IsHitTestVisible="False" Opacity="0.55">
+                                            <Line X1="213" Y1="0" X2="213" Y2="480" Stroke="#D9FFFFFF" StrokeThickness="1" />
+                                            <Line X1="427" Y1="0" X2="427" Y2="480" Stroke="#D9FFFFFF" StrokeThickness="1" />
+                                            <Line X1="0" Y1="160" X2="640" Y2="160" Stroke="#D9FFFFFF" StrokeThickness="1" />
+                                            <Line X1="0" Y1="320" X2="640" Y2="320" Stroke="#D9FFFFFF" StrokeThickness="1" />
+                                            <Line X1="300" Y1="240" X2="340" Y2="240" Stroke="#D9FFFFFF" StrokeThickness="1" />
+                                            <Line X1="320" Y1="220" X2="320" Y2="260" Stroke="#D9FFFFFF" StrokeThickness="1" />
+                                        </Canvas>
+                                    </Grid>
+                                </Viewbox>
+
+                                <Border HorizontalAlignment="Left" VerticalAlignment="Top" Background="#C0191B20" Padding="8,4" Margin="8">
+                                    <TextBlock x:Name="CameraModeText" Text="RGB CAMERA" FontSize="11" FontWeight="SemiBold" />
+                                </Border>
+
+                                <Border x:Name="FreezeBadge" HorizontalAlignment="Center" VerticalAlignment="Top" Background="#E0D75A62" Padding="10,5" Margin="8" Visibility="Collapsed">
+                                    <TextBlock Text="FRAME FROZEN" FontWeight="Bold" FontSize="11" />
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <Border x:Name="RightPanelBorder"
+                                Grid.Column="2"
+                                Background="#030A0B"
+                                BorderBrush="#2C3037"
+                                BorderThickness="1"
+                                ClipToBounds="True">
+                            <TabControl x:Name="RendererTabs" Background="#030A0B" BorderThickness="0">
+                                <TabItem Header="DEPTH HOLOGRAM">
+                                    <Grid x:Name="DepthRenderSurface" Background="#030A0B">
+                                        <Image x:Name="BodyImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Background="#C0191B20" Padding="8,4" Margin="8">
+                                            <TextBlock Text="PLAYER-INDEXED DEPTH" FontSize="11" FontWeight="SemiBold" />
+                                        </Border>
+                                        <TextBlock x:Name="NoBodyText" Text="Move into view" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" />
+                                    </Grid>
+                                </TabItem>
+
+                                <TabItem Header="3D POINT CLOUD">
+                                    <Grid x:Name="PointCloudViewport"
+                                          Background="#020607"
+                                          Cursor="SizeAll"
+                                          MouseLeftButtonDown="PointCloudViewport_MouseLeftButtonDown"
+                                          MouseLeftButtonUp="PointCloudViewport_MouseLeftButtonUp"
+                                          MouseMove="PointCloudViewport_MouseMove"
+                                          MouseWheel="PointCloudViewport_MouseWheel">
+                                        <Image x:Name="PointCloudImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Background="#C0191B20" Padding="8,4" Margin="8">
+                                            <TextBlock Text="LIVE CAMERA-SPACE POINT CLOUD" FontSize="11" FontWeight="SemiBold" />
+                                        </Border>
+                                        <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="#C0191B20" Padding="8,5" Margin="8">
+                                            <StackPanel>
+                                                <TextBlock Text="Drag to orbit • wheel to zoom" FontSize="10" />
+                                                <TextBlock x:Name="PointCloudViewText" Text="Yaw 0°  Pitch 0°  Zoom 1.00x" Foreground="{StaticResource MutedTextBrush}" FontSize="10" Margin="0,2,0,0" />
+                                                <TextBlock x:Name="PointCloudCountText" Text="0 rendered points" Foreground="{StaticResource MutedTextBrush}" FontSize="10" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </TabItem>
+                            </TabControl>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch" Background="Transparent" />
+
+            <Border Grid.Column="4" Style="{StaticResource StudioPanelStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="32" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Background="{StaticResource PanelRaisedBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="0,0,0,1" Padding="10,0">
+                        <TextBlock Text="PROPERTIES" Style="{StaticResource PanelHeaderStyle}" VerticalAlignment="Center" />
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10">
+                            <Expander Header="Camera" IsExpanded="True">
+                                <StackPanel Margin="6,8,4,8">
+                                    <ToggleButton x:Name="MirrorToggle" Content="Mirror camera" Style="{StaticResource PillToggleStyle}" HorizontalAlignment="Stretch" IsChecked="True" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
+                                    <ToggleButton x:Name="FreezeToggle" Content="Freeze frame" Style="{StaticResource PillToggleStyle}" HorizontalAlignment="Stretch" IsChecked="False" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
+                                    <ToggleButton x:Name="FocusCameraToggle" Content="Camera-only workspace" Style="{StaticResource PillToggleStyle}" HorizontalAlignment="Stretch" IsChecked="False" Checked="VisualToggle_Changed" Unchecked="VisualToggle_Changed" />
+
+                                    <TextBlock Text="Brightness" Foreground="{StaticResource MutedTextBrush}" Margin="0,8,0,0" />
+                                    <Slider x:Name="BrightnessSlider" Minimum="-80" Maximum="80" Value="0" ValueChanged="CameraAdjustmentSlider_Changed" />
+                                    <TextBlock x:Name="BrightnessValueText" Text="0" HorizontalAlignment="Right" Margin="0,-27,0,8" />
+
+                                    <TextBlock Text="Contrast" Foreground="{StaticResource MutedTextBrush}" />
+                                    <Slider x:Name="ContrastSlider" Minimum="0.6" Maximum="1.6" Value="1" ValueChanged="CameraAdjustmentSlider_Changed" />
+                                    <TextBlock x:Name="ContrastValueText" Text="1.00" HorizontalAlignment="Right" Margin="0,-27,0,8" />
+
+                                    <Button Content="Reset camera" Click="ResetCameraButton_Click" />
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander Header="Tracking" IsExpanded="True">
+                                <StackPanel Margin="6,8,4,8">
+                                    <ToggleButton x:Name="SeatedModeToggle" Content="Seated tracking" Style="{StaticResource PillToggleStyle}" HorizontalAlignment="Stretch" IsChecked="True" Checked="SeatedModeToggle_Changed" Unchecked="SeatedModeToggle_Changed" />
+                                    <TextBlock Text="Smoothing" Foreground="{StaticResource MutedTextBrush}" Margin="0,8,0,0" />
+                                    <Slider x:Name="SmoothingSlider" Minimum="0.08" Maximum="1" Value="0.35" ValueChanged="SmoothingSlider_ValueChanged" />
+                                    <TextBlock x:Name="SmoothingValueText" Text="0.35" HorizontalAlignment="Right" Margin="0,-27,0,8" />
+                                    <Button Content="Reset tracking filters" Click="ResetFiltersButton_Click" />
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander Header="Heatmaps">
+                                <StackPanel Margin="6,8,4,8">
+                                    <TextBlock Text="Motion threshold" Foreground="{StaticResource MutedTextBrush}" />
+                                    <Slider x:Name="MotionThresholdSlider" Minimum="10" Maximum="180" Value="35" ValueChanged="HeatmapSlider_Changed" />
+                                    <TextBlock x:Name="MotionThresholdValueText" Text="35 mm" HorizontalAlignment="Right" Margin="0,-27,0,8" />
+                                    <TextBlock Text="Trail persistence" Foreground="{StaticResource MutedTextBrush}" />
+                                    <Slider x:Name="MotionPersistenceSlider" Minimum="0.75" Maximum="0.995" Value="0.94" ValueChanged="HeatmapSlider_Changed" />
+                                    <TextBlock x:Name="MotionPersistenceValueText" Text="0.940" HorizontalAlignment="Right" Margin="0,-27,0,8" />
+                                    <Button Content="Clear motion heat" Click="ClearHeatmapButton_Click" />
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander Header="3D Render" IsExpanded="True">
+                                <StackPanel Margin="6,8,4,8">
+                                    <ToggleButton x:Name="BodyOnlyToggle" Content="Body-only render" Style="{StaticResource PillToggleStyle}" HorizontalAlignment="Stretch" IsChecked="True" />
+                                    <ToggleButton x:Name="PointCloudShadingToggle" Content="Surface shading" Style="{StaticResource PillToggleStyle}" HorizontalAlignment="Stretch" IsChecked="True" />
+                                    <TextBlock Text="Detail" Foreground="{StaticResource MutedTextBrush}" Margin="0,8,0,0" />
+                                    <Slider x:Name="PointCloudDetailSlider" Minimum="1" Maximum="4" Value="4" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="RenderSettingSlider_Changed" />
+                                    <TextBlock x:Name="PointCloudDetailValueText" Text="4" HorizontalAlignment="Right" Margin="0,-27,0,8" />
+                                    <TextBlock Text="Point size" Foreground="{StaticResource MutedTextBrush}" />
+                                    <Slider x:Name="PointCloudPointSizeSlider" Minimum="1" Maximum="4" Value="2" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="RenderSettingSlider_Changed" />
+                                    <TextBlock x:Name="PointCloudPointSizeValueText" Text="2" HorizontalAlignment="Right" Margin="0,-27,0,8" />
+                                    <Button Content="Reset 3D view" Click="ResetPointCloudViewButton_Click" />
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander Header="Output" IsExpanded="True">
+                                <StackPanel Margin="6,8,4,8">
+                                    <TextBlock Text="Output scale" Foreground="{StaticResource MutedTextBrush}" />
+                                    <Slider x:Name="OutputScaleSlider" Minimum="0.5" Maximum="3" Value="1" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="OutputScaleSlider_Changed" />
+                                    <TextBlock x:Name="OutputResolutionText" Text="640 × 480 (1.0x)" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,8" />
+
+                                    <TextBlock Text="Video FPS" Foreground="{StaticResource MutedTextBrush}" />
+                                    <Slider x:Name="VideoFpsSlider" Minimum="5" Maximum="30" Value="15" TickFrequency="5" IsSnapToTickEnabled="True" ValueChanged="VideoSettingSlider_Changed" />
+                                    <TextBlock x:Name="VideoFpsValueText" Text="15" HorizontalAlignment="Right" Margin="0,-27,0,8" />
+
+                                    <TextBlock Text="JPEG quality" Foreground="{StaticResource MutedTextBrush}" />
+                                    <Slider x:Name="VideoQualitySlider" Minimum="50" Maximum="95" Value="82" TickFrequency="1" ValueChanged="VideoSettingSlider_Changed" />
+                                    <TextBlock x:Name="VideoQualityValueText" Text="82" HorizontalAlignment="Right" Margin="0,-27,0,8" />
+                                    <TextBlock Text="MJPEG AVI • video only" Foreground="{StaticResource SubtleTextBrush}" FontSize="10" />
+                                </StackPanel>
+                            </Expander>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="3" Margin="8,0,8,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.25*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="1.35*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource StudioPanelStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="32" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Background="{StaticResource PanelRaisedBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="0,0,0,1" Padding="10,0">
+                        <TextBlock Text="RECORDING" Style="{StaticResource PanelHeaderStyle}" VerticalAlignment="Center" />
+                    </Border>
+                    <Grid Grid.Row="1" Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="8" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="CameraVideoButton" Grid.Column="0" Content="Record camera video" Click="CameraVideoButton_Click" Style="{StaticResource PrimaryButtonStyle}" Margin="0" Padding="12,10" />
+                        <Button x:Name="RenderVideoButton" Grid.Column="2" Content="Record render video" Click="RenderVideoButton_Click" Style="{StaticResource PrimaryButtonStyle}" Margin="0" Padding="12,10" />
+                        <Button x:Name="RecordButton" Grid.Row="2" Grid.ColumnSpan="3" Content="Record tracking data" Click="RecordButton_Click" Margin="0" Padding="12,8" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource StudioPanelStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="32" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Background="{StaticResource PanelRaisedBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="0,0,0,1" Padding="10,0">
+                        <TextBlock Text="CAPTURE &amp; FILES" Style="{StaticResource PanelHeaderStyle}" VerticalAlignment="Center" />
+                    </Border>
+                    <UniformGrid Grid.Row="1" Rows="2" Columns="2" Margin="10">
+                        <Button Content="App snapshot" Click="SnapshotButton_Click" Margin="0,0,5,5" />
+                        <Button Content="Camera frame" Click="CameraSnapshotButton_Click" Margin="5,0,0,5" />
+                        <Button Content="Export PLY" Click="ExportPointCloudButton_Click" Margin="0,5,5,0" />
+                        <Button Content="Open output folder" Click="OpenOutputFolderButton_Click" Margin="5,5,0,0" />
+                    </UniformGrid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="4" Style="{StaticResource StudioPanelStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="32" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Background="{StaticResource PanelRaisedBrush}" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="0,0,0,1" Padding="10,0">
+                        <TextBlock Text="SESSION STATUS" Style="{StaticResource PanelHeaderStyle}" VerticalAlignment="Center" />
+                    </Border>
+                    <Grid Grid.Row="1" Margin="12,9">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="TrackingStatusText"
+                                   Text="No skeleton tracked"
+                                   Foreground="{StaticResource MutedTextBrush}"
+                                   TextWrapping="Wrap"
+                                   TextTrimming="CharacterEllipsis" />
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="Sensor FPS" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,8,0" />
+                            <TextBlock x:Name="FpsText" Text="0" FontWeight="SemiBold" />
+                            <TextBlock Text="   •   " Foreground="{StaticResource SubtleTextBrush}" />
+                            <TextBlock Text="Preview:" Foreground="{StaticResource SubtleTextBrush}" Margin="0,0,5,0" />
+                            <TextBlock x:Name="StatusPreviewModeText" Text="Camera" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="4" Background="#14161A" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="0,1,0,0" Padding="9,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="7" Height="7" Fill="{StaticResource SuccessBrush}" Margin="0,0,7,0" />
+                    <TextBlock Text="Kinect Reframe Studio" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" x:Name="StatusBarMessageText" Text="Ready" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource MutedTextBrush}" />
+                <TextBlock Grid.Column="2" Text="Xbox 360 Kinect • SDK 1.8" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" />
             </Grid>
         </Border>
     </Grid>
