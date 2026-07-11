@@ -9,6 +9,22 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $buildScript = Join-Path $PSScriptRoot 'build.ps1'
 $executable = Join-Path $repositoryRoot "src\KinectReframe.App\bin\$Configuration\KinectReframe.App.exe"
 
+$runningProcesses = Get-CimInstance Win32_Process -Filter "Name = 'KinectReframe.App.exe'" -ErrorAction SilentlyContinue
+if ($runningProcesses) {
+    Write-Host 'Stopping the currently running Kinect Reframe instance...' -ForegroundColor Yellow
+
+    foreach ($process in $runningProcesses) {
+        try {
+            Stop-Process -Id $process.ProcessId -Force -ErrorAction Stop
+        }
+        catch {
+            Write-Warning "Could not stop Kinect Reframe process $($process.ProcessId): $($_.Exception.Message)"
+        }
+    }
+
+    Start-Sleep -Milliseconds 500
+}
+
 & $buildScript -Configuration $Configuration
 if ($LASTEXITCODE -ne 0) {
     Write-Host ''
