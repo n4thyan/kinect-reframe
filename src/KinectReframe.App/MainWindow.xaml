@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Kinect Reframe"
         Width="1450"
-        Height="900"
+        Height="930"
         MinWidth="1080"
-        MinHeight="720"
+        MinHeight="760"
         Background="{StaticResource WindowBackgroundBrush}"
         WindowStartupLocation="CenterScreen"
         Loaded="Window_Loaded"
@@ -198,7 +198,9 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="8" />
+                    <RowDefinition Height="6" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="6" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="8" />
                     <RowDefinition Height="Auto" />
@@ -308,10 +310,55 @@
                             Maximum="0.995"
                             Value="0.94"
                             ValueChanged="HeatmapSlider_Changed" />
-                    <TextBlock x:Name="MotionPersistenceValueText" Text="0.94" Width="42" VerticalAlignment="Center" />
+                    <TextBlock x:Name="MotionPersistenceValueText" Text="0.940" Width="48" VerticalAlignment="Center" />
                 </WrapPanel>
 
-                <Grid Grid.Row="4">
+                <WrapPanel Grid.Row="4" VerticalAlignment="Center">
+                    <TextBlock Text="3D detail" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <Slider x:Name="PointCloudDetailSlider"
+                            Width="105"
+                            Minimum="1"
+                            Maximum="4"
+                            Value="4"
+                            TickFrequency="1"
+                            IsSnapToTickEnabled="True"
+                            ValueChanged="RenderSettingSlider_Changed" />
+                    <TextBlock x:Name="PointCloudDetailValueText" Text="4" Width="28" VerticalAlignment="Center" />
+
+                    <TextBlock Text="Point size" VerticalAlignment="Center" Margin="12,0,8,0" />
+                    <Slider x:Name="PointCloudPointSizeSlider"
+                            Width="105"
+                            Minimum="1"
+                            Maximum="4"
+                            Value="2"
+                            TickFrequency="1"
+                            IsSnapToTickEnabled="True"
+                            ValueChanged="RenderSettingSlider_Changed" />
+                    <TextBlock x:Name="PointCloudPointSizeValueText" Text="2" Width="28" VerticalAlignment="Center" />
+
+                    <ToggleButton x:Name="PointCloudShadingToggle"
+                                  Content="3D shading"
+                                  ToolTip="Uses neighbouring depth points to reveal surface shape"
+                                  Style="{StaticResource PillToggleStyle}"
+                                  IsChecked="True" />
+
+                    <TextBlock Text="Output scale" VerticalAlignment="Center" Margin="12,0,8,0" />
+                    <Slider x:Name="OutputScaleSlider"
+                            Width="130"
+                            Minimum="0.5"
+                            Maximum="3"
+                            Value="1"
+                            TickFrequency="0.5"
+                            IsSnapToTickEnabled="True"
+                            ValueChanged="OutputScaleSlider_Changed" />
+                    <TextBlock x:Name="OutputResolutionText"
+                               Text="640 × 480 (1.0x)"
+                               Width="130"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               VerticalAlignment="Center" />
+                </WrapPanel>
+
+                <Grid Grid.Row="6">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -319,9 +366,9 @@
                     </Grid.ColumnDefinitions>
 
                     <WrapPanel>
-                        <Button x:Name="RecordButton" Content="Start recording" Click="RecordButton_Click" />
+                        <Button x:Name="RecordButton" Content="Record tracking data" Click="RecordButton_Click" />
                         <Button Content="Save app snapshot" Click="SnapshotButton_Click" />
-                        <Button Content="Save camera frame" Click="CameraSnapshotButton_Click" />
+                        <Button Content="Save camera output" Click="CameraSnapshotButton_Click" />
                         <Button Content="Export PLY" Click="ExportPointCloudButton_Click" />
                         <Button Content="Clear heat" Click="ClearHeatmapButton_Click" Background="#DCE6EA" />
                         <Button Content="Reset camera" Click="ResetCameraButton_Click" Background="#DCE6EA" />
