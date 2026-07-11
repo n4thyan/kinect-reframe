@@ -76,7 +76,10 @@ namespace KinectReframe
 
         private void PreviewModeButton_Checked(object sender, RoutedEventArgs e)
         {
-            if (suppressPreviewModeEvents || !(sender is FrameworkElement element))
+            // ToggleButton.Checked can fire while InitializeComponent is still constructing
+            // the XAML tree. At that point later named controls are still null, so defer all
+            // preview work until Window_Loaded has marked the interface ready.
+            if (!uiReady || suppressPreviewModeEvents || !(sender is FrameworkElement element))
             {
                 return;
             }
@@ -173,6 +176,19 @@ namespace KinectReframe
         private void SelectPreviewMode(StudioPreviewMode mode)
         {
             currentPreviewMode = mode;
+
+            // This method can also be reached by settings restoration. Keep it safe if the
+            // visual tree is not complete yet and let OnContentRendered apply the layout.
+            if (CameraPreviewModeButton == null ||
+                DepthPreviewModeButton == null ||
+                PointCloudPreviewModeButton == null ||
+                SplitPreviewModeButton == null ||
+                RendererTabs == null ||
+                FocusCameraToggle == null)
+            {
+                return;
+            }
+
             suppressPreviewModeEvents = true;
 
             CameraPreviewModeButton.IsChecked = mode == StudioPreviewMode.Camera;
@@ -200,7 +216,14 @@ namespace KinectReframe
 
         private void ApplyPreviewLayout()
         {
-            if (CameraViewport == null || RightPanelBorder == null)
+            if (CameraViewport == null ||
+                RightPanelBorder == null ||
+                CameraPreviewColumn == null ||
+                RightPanelSpacerColumn == null ||
+                RightPanelColumn == null ||
+                PreviewDescriptionText == null ||
+                StatusPreviewModeText == null ||
+                StatusBarMessageText == null)
             {
                 return;
             }
