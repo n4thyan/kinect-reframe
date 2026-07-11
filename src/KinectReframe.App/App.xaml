@@ -190,10 +190,128 @@
             </Setter>
         </Style>
 
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{StaticResource WorkspaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource PanelBorderBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid KeyboardNavigation.TabNavigation="Local">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Background="#1A1C21" BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="0,0,0,1">
+                                <TabPanel IsItemsHost="True" Margin="4,0,0,0" />
+                            </Border>
+                            <ContentPresenter Grid.Row="1"
+                                              ContentSource="SelectedContent"
+                                              Margin="0"
+                                              SnapsToDevicePixels="True" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Padding" Value="11,6" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="0,0,0,2"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#272A30" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#23262C" />
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="Expander">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Expander">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ToggleButton x:Name="HeaderSite"
+                                          Grid.Row="0"
+                                          IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          Background="#24272D"
+                                          BorderBrush="{StaticResource PanelBorderBrush}"
+                                          BorderThickness="0,0,0,1"
+                                          Foreground="{StaticResource TextBrush}"
+                                          Padding="8,0"
+                                          HorizontalContentAlignment="Stretch">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="14" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Path x:Name="Arrow"
+                                          Data="M 0 0 L 5 5 L 0 10 Z"
+                                          Fill="{StaticResource MutedTextBrush}"
+                                          Width="5"
+                                          Height="10"
+                                          Stretch="Fill"
+                                          VerticalAlignment="Center" />
+                                    <ContentPresenter Grid.Column="1"
+                                                      ContentSource="Header"
+                                                      VerticalAlignment="Center"
+                                                      RecognizesAccessKey="True" />
+                                </Grid>
+                            </ToggleButton>
+                            <Border x:Name="ContentBorder"
+                                    Grid.Row="1"
+                                    Background="#1D1F24"
+                                    BorderBrush="{StaticResource PanelBorderBrush}"
+                                    BorderThickness="0,0,0,1"
+                                    Visibility="Collapsed">
+                                <ContentPresenter />
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ContentBorder" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="Arrow" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <RotateTransform Angle="90" CenterX="2.5" CenterY="5" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style TargetType="Menu">
