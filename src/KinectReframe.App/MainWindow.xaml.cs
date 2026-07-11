@@ -23,14 +23,19 @@ namespace KinectReframe
         private WriteableBitmap colorBitmap;
         private WriteableBitmap bodyBitmap;
         private WriteableBitmap pointCloudBitmap;
+        private WriteableBitmap motionHeatmapBitmap;
+        private WriteableBitmap depthHeatmapBitmap;
         private byte[] colorPixels;
+        private byte[] adjustedColorPixels;
         private DepthImagePixel[] depthPixels;
         private SkeletonPoint[] pointCloudPoints;
         private Skeleton[] skeletons;
         private BodyDepthRenderer bodyRenderer;
         private PointCloudRenderer pointCloudRenderer;
+        private HeatmapRenderer heatmapRenderer;
         private int framesSinceFpsUpdate;
         private bool pointCloudDragging;
+        private bool suppressHeatmapToggleEvents;
         private Point lastPointCloudMousePosition;
         private double pointCloudYaw;
         private double pointCloudPitch;
@@ -44,6 +49,8 @@ namespace KinectReframe
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             UpdatePointCloudViewText();
+            ApplyVisualSettings();
+            UpdateAdjustmentLabels();
             StartSensor();
         }
 
@@ -63,11 +70,12 @@ namespace KinectReframe
                 sensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
                 sensor.DepthStream.Enable(DepthImageFormat.Resolution320x240Fps30);
                 sensor.SkeletonStream.Enable();
-                sensor.SkeletonStream.TrackingMode = SeatedModeCheckBox.IsChecked == true
+                sensor.SkeletonStream.TrackingMode = SeatedModeToggle.IsChecked == true
                     ? SkeletonTrackingMode.Seated
                     : SkeletonTrackingMode.Default;
 
                 colorPixels = new byte[sensor.ColorStream.FramePixelDataLength];
+                adjustedColorPixels = new byte[sensor.ColorStream.FramePixelDataLength];
                 depthPixels = new DepthImagePixel[sensor.DepthStream.FramePixelDataLength];
                 pointCloudPoints = new SkeletonPoint[sensor.DepthStream.FramePixelDataLength];
                 skeletons = new Skeleton[sensor.SkeletonStream.FrameSkeletonArrayLength];
@@ -88,6 +96,22 @@ namespace KinectReframe
                     PixelFormats.Bgra32,
                     null);
 
+                motionHeatmapBitmap = new WriteableBitmap(
+                    sensor.DepthStream.FrameWidth,
+                    sensor.DepthStream.FrameHeight,
+                    96,
+                    96,
+                    PixelFormats.Bgra32,
+                    null);
+
+                depthHeatmapBitmap = new WriteableBitmap(
+                    sensor.DepthStream.FrameWidth,
+                    sensor.DepthStream.FrameHeight,
+                    96,
+                    96,
+                    PixelFormats.Bgra32,
+                    null);
+
                 const int pointCloudWidth = 640;
                 const int pointCloudHeight = 480;
                 pointCloudBitmap = new WriteableBitmap(
@@ -99,6 +123,7 @@ namespace KinectReframe
                     null);
 
                 bodyRenderer = new BodyDepthRenderer(sensor.DepthStream.FrameWidth, sensor.DepthStream.FrameHeight);
+                heatmapRenderer = new HeatmapRenderer(sensor.DepthStream.FrameWidth, sensor.DepthStream.FrameHeight);
                 pointCloudRenderer = new PointCloudRenderer(
                     sensor.DepthStream.FrameWidth,
                     sensor.DepthStream.FrameHeight,
@@ -107,6 +132,8 @@ namespace KinectReframe
 
                 ColorImage.Source = colorBitmap;
                 BodyImage.Source = bodyBitmap;
+                MotionHeatmapImage.Source = motionHeatmapBitmap;
+                DepthHeatmapImage.Source = depthHeatmapBitmap;
                 PointCloudImage.Source = pointCloudBitmap;
 
                 sensor.AllFramesReady += Sensor_AllFramesReady;
@@ -128,6 +155,11 @@ namespace KinectReframe
 
         private void Sensor_AllFramesReady(object sender, AllFramesReadyEventArgs e)
         {
+            if (FreezeToggle.IsChecked == true)
+            {
+                return;
+            }
+
             UpdateColorFrame(e);
             UpdateDepthFrame(e);
             UpdateSkeletonFrame(e);
@@ -144,12 +176,41 @@ namespace KinectReframe
                 }
 
                 frame.CopyPixelDataTo(colorPixels);
+                byte[] displayPixels = ApplyCameraAdjustments(colorPixels);
+
                 colorBitmap.WritePixels(
                     new Int32Rect(0, 0, frame.Width, frame.Height),
-                    colorPixels,
+                    displayPixels,
                     frame.Width * frame.BytesPerPixel,
                     0);
             }
+        }
+
+        private byte[] ApplyCameraAdjustments(byte[] source)
+        {
+            int brightness = BrightnessSlider == null ? 0 : (int)Math.Round(BrightnessSlider.Value);
+            double contrast = ContrastSlider == null ? 1.0 : ContrastSlider.Value;
+
+            if (brightness == 0 && Math.Abs(contrast - 1.0) < 0.001)
+            {
+                return source;
+            }
+
+            for (int i = 0; i < source.Length; i += 4)
+            {
+                adjustedColorPixels[i] = AdjustChannel(source[i], brightness, contrast);
+                adjustedColorPixels[i + 1] = AdjustChannel(source[i + 1], brightness, contrast);
+                adjustedColorPixels[i + 2] = AdjustChannel(source[i + 2], brightness, contrast);
+                adjustedColorPixels[i + 3] = source[i + 3];
+            }
+
+            return adjustedColorPixels;
+        }
+
+        private static byte AdjustChannel(byte value, int brightness, double contrast)
+        {
+            double adjusted = ((value - 128.0) * contrast) + 128.0 + brightness;
+            return (byte)Math.Max(0.0, Math.Min(255.0, adjusted));
         }
 
         private void UpdateDepthFrame(AllFramesReadyEventArgs e)
@@ -162,7 +223,7 @@ namespace KinectReframe
                 }
 
                 frame.CopyDepthImagePixelDataTo(depthPixels);
-                bool bodyOnly = BodyOnlyCheckBox.IsChecked == true;
+                bool bodyOnly = BodyOnlyToggle.IsChecked == true;
                 byte[] renderedPixels = bodyRenderer.Render(depthPixels, bodyOnly);
 
                 bodyBitmap.WritePixels(
@@ -174,6 +235,31 @@ namespace KinectReframe
                 NoBodyText.Visibility = bodyRenderer.BodyPixelCount > 80
                     ? Visibility.Collapsed
                     : Visibility.Visible;
+
+                if (MotionHeatToggle.IsChecked == true)
+                {
+                    byte[] heatPixels = heatmapRenderer.RenderMotion(
+                        depthPixels,
+                        bodyOnly,
+                        (int)Math.Round(MotionThresholdSlider.Value),
+                        MotionPersistenceSlider.Value);
+
+                    motionHeatmapBitmap.WritePixels(
+                        new Int32Rect(0, 0, frame.Width, frame.Height),
+                        heatPixels,
+                        frame.Width * 4,
+                        0);
+                }
+
+                if (DepthHeatToggle.IsChecked == true)
+                {
+                    byte[] depthColours = heatmapRenderer.RenderDepth(depthPixels, bodyOnly);
+                    depthHeatmapBitmap.WritePixels(
+                        new Int32Rect(0, 0, frame.Width, frame.Height),
+                        depthColours,
+                        frame.Width * 4,
+                        0);
+                }
 
                 sensor.CoordinateMapper.MapDepthFrameToSkeletonFrame(
                     DepthImageFormat.Resolution320x240Fps30,
@@ -218,12 +304,20 @@ namespace KinectReframe
                 }
 
                 SmoothedSkeleton smoothedSkeleton = jointSmoother.Update(trackedSkeleton, SmoothingSlider.Value);
-                SkeletonRenderer.Draw(
-                    SkeletonCanvas,
-                    sensor,
-                    trackedSkeleton,
-                    smoothedSkeleton,
-                    ShowRawCheckBox.IsChecked == true);
+
+                if (SkeletonToggle.IsChecked == true)
+                {
+                    SkeletonRenderer.Draw(
+                        SkeletonCanvas,
+                        sensor,
+                        trackedSkeleton,
+                        smoothedSkeleton,
+                        RawSkeletonToggle.IsChecked == true);
+                }
+                else
+                {
+                    SkeletonCanvas.Children.Clear();
+                }
 
                 int trackedJointCount = trackedSkeleton.Joints.Count(joint => joint.TrackingState == JointTrackingState.Tracked);
                 int inferredJointCount = trackedSkeleton.Joints.Count(joint => joint.TrackingState == JointTrackingState.Inferred);
@@ -254,25 +348,197 @@ namespace KinectReframe
             fpsClock.Restart();
         }
 
-        private void SeatedModeCheckBox_Changed(object sender, RoutedEventArgs e)
+        private void SeatedModeToggle_Changed(object sender, RoutedEventArgs e)
         {
             if (sensor == null || !sensor.IsRunning)
             {
                 return;
             }
 
-            sensor.SkeletonStream.TrackingMode = SeatedModeCheckBox.IsChecked == true
+            sensor.SkeletonStream.TrackingMode = SeatedModeToggle.IsChecked == true
                 ? SkeletonTrackingMode.Seated
                 : SkeletonTrackingMode.Default;
             jointSmoother.Reset();
         }
 
+        private void VisualToggle_Changed(object sender, RoutedEventArgs e)
+        {
+            ApplyVisualSettings();
+        }
+
+        private void ApplyVisualSettings()
+        {
+            if (SkeletonCanvas == null)
+            {
+                return;
+            }
+
+            bool skeletonVisible = SkeletonToggle.IsChecked == true;
+            SkeletonCanvas.Visibility = skeletonVisible ? Visibility.Visible : Visibility.Collapsed;
+            RawSkeletonToggle.IsEnabled = skeletonVisible;
+
+            if (!skeletonVisible)
+            {
+                SkeletonCanvas.Children.Clear();
+            }
+
+            GridOverlayCanvas.Visibility = GridToggle.IsChecked == true
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            FreezeBadge.Visibility = FreezeToggle.IsChecked == true
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            CameraSurface.RenderTransform = MirrorToggle.IsChecked == true
+                ? new ScaleTransform(-1.0, 1.0)
+                : Transform.Identity;
+
+            bool focusCamera = FocusCameraToggle.IsChecked == true;
+            RightPanelBorder.Visibility = focusCamera ? Visibility.Collapsed : Visibility.Visible;
+            RightPanelSpacerColumn.Width = focusCamera ? new GridLength(0) : new GridLength(16);
+            RightPanelColumn.Width = focusCamera ? new GridLength(0) : new GridLength(2, GridUnitType.Star);
+
+            UpdateCameraModeText();
+        }
+
+        private void HeatmapToggle_Changed(object sender, RoutedEventArgs e)
+        {
+            if (suppressHeatmapToggleEvents)
+            {
+                return;
+            }
+
+            suppressHeatmapToggleEvents = true;
+
+            if (sender == MotionHeatToggle && MotionHeatToggle.IsChecked == true)
+            {
+                DepthHeatToggle.IsChecked = false;
+            }
+            else if (sender == DepthHeatToggle && DepthHeatToggle.IsChecked == true)
+            {
+                MotionHeatToggle.IsChecked = false;
+            }
+
+            suppressHeatmapToggleEvents = false;
+
+            MotionHeatmapImage.Visibility = MotionHeatToggle.IsChecked == true
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            DepthHeatmapImage.Visibility = DepthHeatToggle.IsChecked == true
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            UpdateCameraModeText();
+        }
+
+        private void UpdateCameraModeText()
+        {
+            if (CameraModeText == null)
+            {
+                return;
+            }
+
+            string mode = "RGB CAMERA";
+            if (MotionHeatToggle.IsChecked == true)
+            {
+                mode += " + MOTION HEAT";
+            }
+            else if (DepthHeatToggle.IsChecked == true)
+            {
+                mode += " + DEPTH HEAT";
+            }
+
+            if (SkeletonToggle.IsChecked == true)
+            {
+                mode += " + SKELETON";
+            }
+
+            CameraModeText.Text = mode;
+        }
+
+        private void CameraAdjustmentSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            UpdateAdjustmentLabels();
+        }
+
         private void SmoothingSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            UpdateAdjustmentLabels();
+        }
+
+        private void HeatmapSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            UpdateAdjustmentLabels();
+        }
+
+        private void UpdateAdjustmentLabels()
+        {
+            if (BrightnessValueText != null)
+            {
+                BrightnessValueText.Text = Math.Round(BrightnessSlider.Value).ToString("0");
+            }
+
+            if (ContrastValueText != null)
+            {
+                ContrastValueText.Text = ContrastSlider.Value.ToString("0.00");
+            }
+
             if (SmoothingValueText != null)
             {
-                SmoothingValueText.Text = e.NewValue.ToString("0.00");
+                SmoothingValueText.Text = SmoothingSlider.Value.ToString("0.00");
             }
+
+            if (MotionThresholdValueText != null)
+            {
+                MotionThresholdValueText.Text = Math.Round(MotionThresholdSlider.Value).ToString("0") + " mm";
+            }
+
+            if (MotionPersistenceValueText != null)
+            {
+                MotionPersistenceValueText.Text = MotionPersistenceSlider.Value.ToString("0.000");
+            }
+        }
+
+        private void ClearHeatmapButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (heatmapRenderer != null)
+            {
+                heatmapRenderer.ClearMotion();
+            }
+
+            ClearBitmap(motionHeatmapBitmap);
+            TrackingStatusText.Text = "Motion heat cleared";
+        }
+
+        private static void ClearBitmap(WriteableBitmap bitmap)
+        {
+            if (bitmap == null)
+            {
+                return;
+            }
+
+            byte[] empty = new byte[bitmap.PixelWidth * bitmap.PixelHeight * 4];
+            bitmap.WritePixels(
+                new Int32Rect(0, 0, bitmap.PixelWidth, bitmap.PixelHeight),
+                empty,
+                bitmap.PixelWidth * 4,
+                0);
+        }
+
+        private void ResetCameraButton_Click(object sender, RoutedEventArgs e)
+        {
+            BrightnessSlider.Value = 0;
+            ContrastSlider.Value = 1.0;
+            MirrorToggle.IsChecked = true;
+            FreezeToggle.IsChecked = false;
+            GridToggle.IsChecked = false;
+            FocusCameraToggle.IsChecked = false;
+            MotionHeatToggle.IsChecked = false;
+            DepthHeatToggle.IsChecked = false;
+            ClearHeatmapButton_Click(sender, e);
+            ApplyVisualSettings();
+            TrackingStatusText.Text = "Camera view reset";
         }
 
         private void PointCloudViewport_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -347,7 +613,7 @@ namespace KinectReframe
 
             try
             {
-                bool bodyOnly = BodyOnlyCheckBox.IsChecked == true;
+                bool bodyOnly = BodyOnlyToggle.IsChecked == true;
                 string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exports");
                 string mode = bodyOnly ? "body" : "scene";
                 string path = Path.Combine(
@@ -373,7 +639,7 @@ namespace KinectReframe
         {
             if (!recorder.IsRecording)
             {
-                recorder.Start(SeatedModeCheckBox.IsChecked == true);
+                recorder.Start(SeatedModeToggle.IsChecked == true);
                 RecordButton.Content = "Stop and save";
                 RecordButton.Background = new SolidColorBrush(Color.FromRgb(239, 115, 115));
                 return;
@@ -397,14 +663,31 @@ namespace KinectReframe
 
         private void SnapshotButton_Click(object sender, RoutedEventArgs e)
         {
+            SaveVisualSnapshot(RootVisual, "kinect-reframe-app");
+        }
+
+        private void CameraSnapshotButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveVisualSnapshot(CameraViewport, "kinect-reframe-camera");
+        }
+
+        private void SaveVisualSnapshot(Visual visual, string prefix)
+        {
+            FrameworkElement element = visual as FrameworkElement;
+            if (element == null || element.ActualWidth < 1 || element.ActualHeight < 1)
+            {
+                TrackingStatusText.Text = "Nothing is ready to capture yet";
+                return;
+            }
+
             string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "captures");
             Directory.CreateDirectory(folder);
-            string path = Path.Combine(folder, "kinect-reframe-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".png");
+            string path = Path.Combine(folder, prefix + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".png");
 
-            int width = Math.Max(1, (int)RootVisual.ActualWidth);
-            int height = Math.Max(1, (int)RootVisual.ActualHeight);
+            int width = Math.Max(1, (int)element.ActualWidth);
+            int height = Math.Max(1, (int)element.ActualHeight);
             RenderTargetBitmap render = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-            render.Render(RootVisual);
+            render.Render(visual);
 
             PngBitmapEncoder encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(render));
