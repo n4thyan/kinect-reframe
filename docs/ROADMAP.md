@@ -2,22 +2,18 @@
 
 ## Phase 0: hardware baseline
 
-Status: implementation complete, physical validation pending
+Status: hardware validated
 
 - confirm Kinect SDK 1.8 colour, depth and skeleton streams
 - support seated and default tracking modes
 - display player-index body segmentation
 - report frame rate and tracked/inferred joint counts
-- provide a clean RGB camera view with optional overlays
-- add mirror, freeze, grid, focus, brightness and contrast controls
 
 Acceptance criteria:
 
 - the application starts with one Xbox 360 Kinect connected
 - RGB, depth and skeleton data run together at interactive speed
 - seated mode can be switched without restarting the application
-- skeleton and heatmap overlays start hidden
-- every visual layer has an obvious on/off state
 
 ## Phase 1: measurable tracking improvements
 
@@ -39,18 +35,24 @@ Acceptance criteria:
 
 ## Phase 2: body rendering
 
-Status: initial point-cloud renderer included, hardware validation pending
+Status: live renderer validated; quality work in progress
 
-- replace the 2D depth hologram with a real 3D point cloud
 - map depth pixels into camera-space coordinates
+- render a live body-only point cloud
 - allow orbit, zoom and reset controls
 - switch between body-only and complete-scene rendering
-- add point, voxel and trail render styles
 - export a captured frame as PLY
+- use dense player-index sampling for smoother body renders
+- add depth-aware surface shading to reveal 3D form
+- add configurable point size and render-density controls
+- map RGB colour onto camera-space points
+- add point, voxel and trail render styles
 
 Acceptance criteria:
 
 - the user can rotate a body point cloud independently of the physical camera
+- live body rendering remains interactive on the development PC
+- dense mode no longer appears as large tiled blocks when zoomed
 - exported point clouds open correctly in Blender or CloudCompare
 
 ## Phase 3: modern pose estimation
@@ -83,12 +85,9 @@ Acceptance criteria:
 
 ## Phase 5: experiments
 
-Status: motion and depth heatmaps implemented; remaining experiments planned
-
 - ghost replay
 - hand and body motion trails
-- motion-history heatmap
-- depth-distance heatmap
+- movement heatmaps
 - room point-cloud capture
 - labelled motion dataset collection
 - trainable personal gestures
@@ -97,7 +96,6 @@ Status: motion and depth heatmaps implemented; remaining experiments planned
 
 - medical diagnosis or rehabilitation scoring
 - claiming hidden limbs are directly tracked
-- thermal-imaging claims from the Kinect infrared/depth sensor
 - background surveillance
 - cloud processing by default
 - replacing the Kinect runtime before the baseline is understood
