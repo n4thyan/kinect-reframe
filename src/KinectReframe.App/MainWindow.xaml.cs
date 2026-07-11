@@ -337,6 +337,38 @@ namespace KinectReframe
                 pointCloudZoom);
         }
 
+        private void ExportPointCloudButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (depthPixels == null || pointCloudPoints == null || pointCloudRenderer == null)
+            {
+                TrackingStatusText.Text = "Wait for the first depth frame before exporting";
+                return;
+            }
+
+            try
+            {
+                bool bodyOnly = BodyOnlyCheckBox.IsChecked == true;
+                string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exports");
+                string mode = bodyOnly ? "body" : "scene";
+                string path = Path.Combine(
+                    folder,
+                    "kinect-reframe-" + mode + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".ply");
+
+                int exportedPoints = PointCloudExporter.ExportPly(
+                    path,
+                    depthPixels,
+                    pointCloudPoints,
+                    bodyOnly,
+                    2);
+
+                TrackingStatusText.Text = string.Format("Exported {0:N0} points to {1}", exportedPoints, path);
+            }
+            catch (Exception exception)
+            {
+                TrackingStatusText.Text = "PLY export failed: " + exception.Message;
+            }
+        }
+
         private void RecordButton_Click(object sender, RoutedEventArgs e)
         {
             if (!recorder.IsRecording)
