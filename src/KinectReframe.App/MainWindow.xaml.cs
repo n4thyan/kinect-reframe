@@ -268,13 +268,24 @@ namespace KinectReframe
                     depthPixels,
                     pointCloudPoints);
 
+                int detailLevel = PointCloudDetailSlider == null
+                    ? 4
+                    : (int)Math.Round(PointCloudDetailSlider.Value);
+                int pointSize = PointCloudPointSizeSlider == null
+                    ? 2
+                    : (int)Math.Round(PointCloudPointSizeSlider.Value);
+                bool useShading = PointCloudShadingToggle == null || PointCloudShadingToggle.IsChecked == true;
+
                 byte[] pointCloudPixels = pointCloudRenderer.Render(
                     depthPixels,
                     pointCloudPoints,
                     bodyOnly,
                     pointCloudYaw,
                     pointCloudPitch,
-                    pointCloudZoom);
+                    pointCloudZoom,
+                    detailLevel,
+                    pointSize,
+                    useShading);
 
                 pointCloudBitmap.WritePixels(
                     new Int32Rect(0, 0, pointCloudBitmap.PixelWidth, pointCloudBitmap.PixelHeight),
@@ -282,7 +293,11 @@ namespace KinectReframe
                     pointCloudBitmap.PixelWidth * 4,
                     0);
 
-                PointCloudCountText.Text = pointCloudRenderer.PointCount.ToString("N0") + " sampled points";
+                PointCloudCountText.Text = string.Format(
+                    "{0:N0} points • detail {1} • size {2}",
+                    pointCloudRenderer.PointCount,
+                    detailLevel,
+                    pointSize);
             }
         }
 
@@ -479,31 +494,59 @@ namespace KinectReframe
             UpdateAdjustmentLabels();
         }
 
+        private void RenderSettingSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            UpdateAdjustmentLabels();
+        }
+
+        private void OutputScaleSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            UpdateAdjustmentLabels();
+        }
+
         private void UpdateAdjustmentLabels()
         {
-            if (BrightnessValueText != null)
+            if (BrightnessValueText != null && BrightnessSlider != null)
             {
                 BrightnessValueText.Text = Math.Round(BrightnessSlider.Value).ToString("0");
             }
 
-            if (ContrastValueText != null)
+            if (ContrastValueText != null && ContrastSlider != null)
             {
                 ContrastValueText.Text = ContrastSlider.Value.ToString("0.00");
             }
 
-            if (SmoothingValueText != null)
+            if (SmoothingValueText != null && SmoothingSlider != null)
             {
                 SmoothingValueText.Text = SmoothingSlider.Value.ToString("0.00");
             }
 
-            if (MotionThresholdValueText != null)
+            if (MotionThresholdValueText != null && MotionThresholdSlider != null)
             {
                 MotionThresholdValueText.Text = Math.Round(MotionThresholdSlider.Value).ToString("0") + " mm";
             }
 
-            if (MotionPersistenceValueText != null)
+            if (MotionPersistenceValueText != null && MotionPersistenceSlider != null)
             {
                 MotionPersistenceValueText.Text = MotionPersistenceSlider.Value.ToString("0.000");
+            }
+
+            if (PointCloudDetailValueText != null && PointCloudDetailSlider != null)
+            {
+                PointCloudDetailValueText.Text = Math.Round(PointCloudDetailSlider.Value).ToString("0");
+            }
+
+            if (PointCloudPointSizeValueText != null && PointCloudPointSizeSlider != null)
+            {
+                PointCloudPointSizeValueText.Text = Math.Round(PointCloudPointSizeSlider.Value).ToString("0");
+            }
+
+            if (OutputResolutionText != null && OutputScaleSlider != null)
+            {
+                double scale = OutputScaleSlider.Value;
+                int width = Math.Max(1, (int)Math.Round(640.0 * scale));
+                int height = Math.Max(1, (int)Math.Round(480.0 * scale));
+                OutputResolutionText.Text = string.Format("{0} × {1} ({2:0.0}x)", width, height, scale);
             }
         }
 
@@ -537,6 +580,7 @@ namespace KinectReframe
         {
             BrightnessSlider.Value = 0;
             ContrastSlider.Value = 1.0;
+            OutputScaleSlider.Value = 1.0;
             MirrorToggle.IsChecked = true;
             FreezeToggle.IsChecked = false;
             GridToggle.IsChecked = false;
@@ -593,7 +637,11 @@ namespace KinectReframe
             pointCloudYaw = 0.0;
             pointCloudPitch = 0.0;
             pointCloudZoom = 1.0;
+            PointCloudDetailSlider.Value = 4;
+            PointCloudPointSizeSlider.Value = 2;
+            PointCloudShadingToggle.IsChecked = true;
             UpdatePointCloudViewText();
+            UpdateAdjustmentLabels();
         }
 
         private void UpdatePointCloudViewText()
@@ -647,8 +695,9 @@ namespace KinectReframe
             if (!recorder.IsRecording)
             {
                 recorder.Start(SeatedModeToggle.IsChecked == true);
-                RecordButton.Content = "Stop and save";
+                RecordButton.Content = "Stop and save tracking";
                 RecordButton.Background = new SolidColorBrush(Color.FromRgb(239, 115, 115));
+                TrackingStatusText.Text = "Recording skeleton tracking data";
                 return;
             }
 
@@ -659,42 +708,52 @@ namespace KinectReframe
         {
             string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "recordings");
             string path = recorder.StopAndSave(folder);
-            RecordButton.Content = "Start recording";
+            RecordButton.Content = "Record tracking data";
             RecordButton.ClearValue(BackgroundProperty);
 
             if (!string.IsNullOrWhiteSpace(path))
             {
-                TrackingStatusText.Text = "Saved " + path;
+                TrackingStatusText.Text = "Saved tracking data to " + path;
             }
         }
 
         private void SnapshotButton_Click(object sender, RoutedEventArgs e)
         {
-            SaveVisualSnapshot(RootVisual, "kinect-reframe-app");
+            SaveVisualSnapshot(RootVisual, "kinect-reframe-app", 1.0);
         }
 
         private void CameraSnapshotButton_Click(object sender, RoutedEventArgs e)
         {
-            SaveVisualSnapshot(CameraViewport, "kinect-reframe-camera");
+            double scale = OutputScaleSlider == null ? 1.0 : OutputScaleSlider.Value;
+            SaveVisualSnapshot(CameraSurface, "kinect-reframe-camera", scale);
         }
 
-        private void SaveVisualSnapshot(Visual visual, string prefix)
+        private void SaveVisualSnapshot(FrameworkElement element, string prefix, double scale)
         {
-            FrameworkElement element = visual as FrameworkElement;
             if (element == null || element.ActualWidth < 1 || element.ActualHeight < 1)
             {
                 TrackingStatusText.Text = "Nothing is ready to capture yet";
                 return;
             }
 
+            scale = Math.Max(0.5, Math.Min(3.0, scale));
+
             string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "captures");
             Directory.CreateDirectory(folder);
-            string path = Path.Combine(folder, prefix + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".png");
 
-            int width = Math.Max(1, (int)element.ActualWidth);
-            int height = Math.Max(1, (int)element.ActualHeight);
-            RenderTargetBitmap render = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-            render.Render(visual);
+            int width = Math.Max(1, (int)Math.Round(element.ActualWidth * scale));
+            int height = Math.Max(1, (int)Math.Round(element.ActualHeight * scale));
+            string path = Path.Combine(
+                folder,
+                prefix + "-" + width + "x" + height + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".png");
+
+            RenderTargetBitmap render = new RenderTargetBitmap(
+                width,
+                height,
+                96.0 * scale,
+                96.0 * scale,
+                PixelFormats.Pbgra32);
+            render.Render(element);
 
             PngBitmapEncoder encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(render));
@@ -703,7 +762,7 @@ namespace KinectReframe
                 encoder.Save(stream);
             }
 
-            TrackingStatusText.Text = "Saved " + path;
+            TrackingStatusText.Text = string.Format("Saved {0} × {1} image to {2}", width, height, path);
         }
 
         private void ResetFiltersButton_Click(object sender, RoutedEventArgs e)
