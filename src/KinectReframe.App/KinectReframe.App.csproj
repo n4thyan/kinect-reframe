@@ -64,6 +64,9 @@
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="MainWindow.Product.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MainWindow.Studio.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
@@ -75,6 +78,7 @@
     <Compile Include="Rendering\HeatmapRenderer.cs" />
     <Compile Include="Rendering\PointCloudRenderer.cs" />
     <Compile Include="Rendering\SkeletonRenderer.cs" />
+    <Compile Include="Services\AppSettings.cs" />
     <Compile Include="Services\MjpegAviWriter.cs" />
     <Compile Include="Services\PointCloudExporter.cs" />
     <Compile Include="Services\SessionRecorder.cs" />
