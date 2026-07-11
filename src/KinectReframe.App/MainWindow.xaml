@@ -192,6 +192,7 @@
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="RecordButton" Content="Start recording" Click="RecordButton_Click" />
                         <Button Content="Save snapshot" Click="SnapshotButton_Click" />
+                        <Button Content="Export PLY" Click="ExportPointCloudButton_Click" />
                         <Button Content="Reset filters" Click="ResetFiltersButton_Click" Background="#DCE6EA" />
                         <Button Content="Reset 3D view" Click="ResetPointCloudViewButton_Click" Background="#DCE6EA" />
                     </StackPanel>
