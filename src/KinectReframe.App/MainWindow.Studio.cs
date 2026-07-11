@@ -68,9 +68,9 @@ namespace KinectReframe
             {
                 SelectPreviewMode(StudioPreviewMode.Camera);
             }
-            else if (currentPreviewMode == StudioPreviewMode.Camera)
+            else
             {
-                SelectPreviewMode(StudioPreviewMode.Split);
+                ApplyPreviewLayout();
             }
         }
 
