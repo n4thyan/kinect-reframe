@@ -1,32 +1,45 @@
 # Kinect Reframe roadmap
 
+## Project scope
+
+The current application uses Kinect SDK 1.8 data, deterministic temporal filtering and conventional 3D geometry. It does not currently contain an LLM or learned pose model.
+
+Modern pose estimation remains an optional later research phase. Present-day features should be described accurately as tracking, signal processing, depth visualisation and 3D rendering.
+
 ## Phase 0: hardware baseline
 
-Status: hardware validated
+Status: **validated on physical Xbox 360 Kinect hardware**
 
 - confirm Kinect SDK 1.8 colour, depth and skeleton streams
 - support seated and default tracking modes
 - display player-index body segmentation
 - report frame rate and tracked/inferred joint counts
 
-Acceptance criteria:
+Acceptance criteria met:
 
 - the application starts with one Xbox 360 Kinect connected
 - RGB, depth and skeleton data run together at interactive speed
-- seated mode can be switched without restarting the application
+- seated mode switches without restarting the application
 
 ## Phase 1: measurable tracking improvements
 
-Status: adaptive filter implemented; metrics and replay remain
+Status: **adaptive filter implemented; metrics and replay remain**
+
+Completed:
 
 - overlay raw Kinect joints and enhanced joints
 - configurable temporal smoothing
 - raise responsiveness during deliberate fast movement
 - predict briefly missing joints with decaying measured velocity
 - record raw and enhanced coordinates to JSON
+- keep predictions visually distinct from measurements
+
+Remaining:
+
 - add a replay viewer
 - calculate joint jitter while the user is still
 - calculate added latency while the user moves
+- store active smoothing parameters in each recording
 
 Acceptance criteria:
 
@@ -35,9 +48,11 @@ Acceptance criteria:
 - predicted joints are visually distinct from measured joints
 - predictions decay and time out rather than drifting indefinitely
 
-## Phase 2: body rendering
+## Phase 2: body and scene rendering
 
-Status: live renderer validated; interactive quality controls implemented
+Status: **live renderer validated; interactive quality controls implemented**
+
+Completed:
 
 - map depth pixels into camera-space coordinates
 - render a live body-only point cloud
@@ -45,29 +60,48 @@ Status: live renderer validated; interactive quality controls implemented
 - switch between body-only and complete-scene rendering
 - export a captured frame as PLY
 - use dense player-index sampling for smoother body renders
-- add depth-aware surface shading to reveal 3D form
+- add depth-aware surface shading
 - add configurable point size and render-density controls
+- validate body and room rendering on physical hardware
+
+Observed limitation:
+
+- the current renderer is a single-view **2.5D point cloud**
+- rotating behind the subject reveals the reverse side of the front-facing depth shell
+- facial relief may therefore appear on the back of the head
+- this is expected and must not be presented as captured rear geometry
+
+Remaining:
+
 - map RGB colour onto camera-space points
 - add point, voxel and trail render styles
+- improve depth-hole and edge treatment
+- add optional back-face culling or a front-view orbit limit
+- evaluate temporal point accumulation for static reconstruction
 
 Acceptance criteria:
 
 - the user can rotate a body point cloud independently of the physical camera
-- live body rendering remains interactive on the development PC
+- live rendering remains interactive on the development PC
 - detail and point-size settings visibly alter quality and load
-- dense mode no longer appears as large tiled blocks when zoomed
-- exported point clouds open correctly in Blender or CloudCompare
+- unseen surfaces are never labelled as measured
 
 ## Phase 2.5: camera output and recording
 
-Status: scaled PNG output implemented; video encoder pending
+Status: **scaled PNG output implemented; video encoder pending**
 
-- save clean camera compositions at 0.5x to 3x output scale
+Completed:
+
+- save clean camera compositions at 0.5× to 3× output scale
 - include RGB, skeleton and heatmap layers in output
+- keep tracking-data recording separate and clearly labelled
+
+Remaining:
+
 - add RGB video recording
 - add optional depth/hologram recording
-- keep tracking-data recording separate and clearly labelled
 - report dropped frames and output frame rate
+- encode away from the Kinect capture callback
 
 Acceptance criteria:
 
@@ -75,47 +109,58 @@ Acceptance criteria:
 - video recording does not block Kinect frame processing
 - file names and controls clearly distinguish video from skeleton JSON
 
-## Phase 3: modern pose estimation
+## Phase 3: replay, measurement and polish
+
+Priority before adding learned models:
+
+- replay `.krs.json` tracking sessions inside the app
+- compare raw and enhanced skeletons from identical recorded frames
+- graph per-joint jitter, inferred-frame count and prediction duration
+- add presets for seated, responsive and maximum-smoothing modes
+- improve UI grouping and tooltips
+- add a first-run hardware and performance guide
+
+## Phase 4: optional modern pose estimation
+
+This phase is research work and is not part of the current feature claim.
 
 - evaluate an ONNX-compatible pose model
 - run inference over the Kinect RGB frame
 - map 2D model landmarks onto Kinect depth
 - convert valid landmarks to camera-space coordinates
 - record model confidence beside Kinect tracking state
+- measure whether it actually improves the Kinect baseline
 
 Acceptance criteria:
 
-- model landmarks remain aligned with the colour image and depth map
-- invalid and missing depth samples are rejected rather than silently guessed
-- inference speed is displayed in the application
+- model landmarks remain aligned with colour and depth
+- invalid depth samples are rejected rather than silently guessed
+- inference speed and latency are displayed
+- documentation distinguishes SDK tracking, filtering and learned inference
 
-## Phase 4: confidence-weighted fusion
+## Phase 5: optional confidence-weighted fusion
 
 - compare Kinect and model landmarks in a shared coordinate system
 - choose or blend estimates based on confidence and temporal consistency
 - enforce basic limb-length and joint-angle constraints
-- refine velocity-aware prediction during brief occlusion
-- quantify improvement over the Phase 1 baseline
+- refine prediction during brief occlusion
+- quantify improvement over the deterministic Phase 1 baseline
 
-Acceptance criteria:
-
-- a test suite covers coordinate transforms and filtering logic
-- seated arm tracking shows lower measured jitter without unacceptable latency
-- occlusion predictions time out and never appear as directly measured data
-
-## Phase 5: experiments
+## Phase 6: reconstruction and experiments
 
 - ghost replay
 - hand and body motion trails
-- movement heatmaps
 - room point-cloud capture
 - labelled motion dataset collection
 - trainable personal gestures
+- multi-frame Kinect Fusion-style reconstruction
+- multi-camera calibration experiments
 
-## Non-goals for the early versions
+## Non-goals
 
+- claiming hidden limbs or rear surfaces are directly tracked
+- describing deterministic filtering as AI
 - medical diagnosis or rehabilitation scoring
-- claiming hidden limbs are directly tracked
 - background surveillance
 - cloud processing by default
-- replacing the Kinect runtime before the baseline is understood
+- replacing the Kinect runtime before its baseline is measured
