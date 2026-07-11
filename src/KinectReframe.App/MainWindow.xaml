@@ -1,0 +1,166 @@
+<Window x:Class="KinectReframe.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Kinect Reframe"
+        Width="1280"
+        Height="780"
+        MinWidth="980"
+        MinHeight="640"
+        Background="{StaticResource WindowBackgroundBrush}"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing">
+    <Grid x:Name="RootVisual" Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="16" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="16" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel>
+                <TextBlock Text="KINECT REFRAME" FontSize="26" FontWeight="Bold" />
+                <TextBlock Text="Xbox 360 Kinect tracking and live depth rendering lab"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           Margin="0,4,0,0" />
+            </StackPanel>
+
+            <Border Grid.Column="1"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource PanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="12,8">
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse x:Name="ConnectionIndicator" Width="10" Height="10" Fill="#D85858" Margin="0,0,8,0" />
+                    <TextBlock x:Name="ConnectionText" Text="Waiting for sensor" VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="2*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Background="#050607"
+                    BorderBrush="{StaticResource PanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    ClipToBounds="True">
+                <Grid>
+                    <Image x:Name="ColorImage" Stretch="Uniform" />
+                    <Canvas x:Name="SkeletonCanvas"
+                            Width="640"
+                            Height="480"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            IsHitTestVisible="False" />
+                    <Border HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Background="#B0101318"
+                            Padding="10,6"
+                            Margin="10">
+                        <TextBlock Text="RGB + RAW / SMOOTHED SKELETON" FontSize="12" FontWeight="SemiBold" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Background="#030A0B"
+                    BorderBrush="{StaticResource PanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    ClipToBounds="True">
+                <Grid>
+                    <Image x:Name="BodyImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                    <Border HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Background="#B0101318"
+                            Padding="10,6"
+                            Margin="10">
+                        <TextBlock Text="BODY-ONLY DEPTH HOLOGRAM" FontSize="12" FontWeight="SemiBold" />
+                    </Border>
+                    <TextBlock x:Name="NoBodyText"
+                               Text="Move into view"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="20" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="4"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource PanelBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="14">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="12" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <WrapPanel Grid.Row="0" VerticalAlignment="Center">
+                    <CheckBox x:Name="SeatedModeCheckBox"
+                              Content="Seated mode"
+                              IsChecked="True"
+                              Checked="SeatedModeCheckBox_Changed"
+                              Unchecked="SeatedModeCheckBox_Changed" />
+                    <CheckBox x:Name="ShowRawCheckBox" Content="Show raw skeleton" IsChecked="True" />
+                    <CheckBox x:Name="BodyOnlyCheckBox" Content="Body-only render" IsChecked="True" />
+                    <TextBlock Text="Smoothing responsiveness" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <Slider x:Name="SmoothingSlider"
+                            Width="160"
+                            Minimum="0.08"
+                            Maximum="1"
+                            Value="0.35"
+                            TickFrequency="0.05"
+                            IsSnapToTickEnabled="False"
+                            VerticalAlignment="Center"
+                            ValueChanged="SmoothingSlider_ValueChanged" />
+                    <TextBlock x:Name="SmoothingValueText" Text="0.35" Width="44" VerticalAlignment="Center" Margin="8,0,0,0" />
+                </WrapPanel>
+
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="RecordButton" Content="Start recording" Click="RecordButton_Click" />
+                        <Button Content="Save snapshot" Click="SnapshotButton_Click" />
+                        <Button Content="Reset filters" Click="ResetFiltersButton_Click" Background="#DCE6EA" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Column="1"
+                               x:Name="TrackingStatusText"
+                               Text="No skeleton tracked"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center" />
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <TextBlock Text="FPS " Foreground="{StaticResource MutedTextBrush}" />
+                        <TextBlock x:Name="FpsText" Text="0" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
