@@ -88,26 +88,44 @@ Acceptance criteria:
 
 ## Phase 2.5: camera output and recording
 
-Status: **scaled PNG output implemented; video encoder pending**
+Status: **MJPEG video recorder implemented; physical playback and performance validation pending**
 
 Completed:
 
 - save clean camera compositions at 0.5× to 3× output scale
-- include RGB, skeleton and heatmap layers in output
+- include RGB, skeleton, heatmap and grid layers in camera output
 - keep tracking-data recording separate and clearly labelled
+- record the camera composition to MJPEG AVI
+- record the selected depth-hologram or point-cloud render to MJPEG AVI
+- support 5–30 FPS output
+- support adjustable JPEG quality
+- use a bounded worker-thread encoding queue
+- report elapsed time, written frames and dropped frames
+- lock incompatible settings while a recording is active
+- create a dedicated `videos` folder and output-folder shortcut
 
-Remaining:
+Validation remaining:
 
-- add RGB video recording
-- add optional depth/hologram recording
-- report dropped frames and output frame rate
-- encode away from the Kinect capture callback
+- compile the new recording code on the Kinect development PC
+- verify camera, depth-render and point-cloud AVI playback
+- confirm output dimensions at 0.5×, 1×, 2× and 3×
+- measure dropped frames at several FPS, quality and render-detail combinations
+- confirm overlays and mirror state appear correctly in camera recordings
+- confirm stopping and closing the application finalise playable files
+
+Later recording improvements:
+
+- pause and resume
+- optional audio capture from the Kinect microphone array
+- automatic file splitting for long or very large recordings
+- additional codecs or an optional FFmpeg backend
 
 Acceptance criteria:
 
 - generated output has the selected dimensions
 - video recording does not block Kinect frame processing
 - file names and controls clearly distinguish video from skeleton JSON
+- stopping produces a playable AVI with correct duration and frame count
 
 ## Phase 3: replay, measurement and polish
 
@@ -117,7 +135,8 @@ Priority before adding learned models:
 - compare raw and enhanced skeletons from identical recorded frames
 - graph per-joint jitter, inferred-frame count and prediction duration
 - add presets for seated, responsive and maximum-smoothing modes
-- improve UI grouping and tooltips
+- redesign the current prototype UI into a deliberate production interface
+- add keyboard shortcuts and clearer mode grouping
 - add a first-run hardware and performance guide
 
 ## Phase 4: optional modern pose estimation
