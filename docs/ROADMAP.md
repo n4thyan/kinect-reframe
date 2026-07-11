@@ -17,11 +17,12 @@ Acceptance criteria:
 
 ## Phase 1: measurable tracking improvements
 
-Status: initial implementation included
+Status: adaptive filter implemented; metrics and replay remain
 
 - overlay raw Kinect joints and enhanced joints
 - configurable temporal smoothing
-- preserve a joint briefly through momentary tracking loss
+- raise responsiveness during deliberate fast movement
+- predict briefly missing joints with decaying measured velocity
 - record raw and enhanced coordinates to JSON
 - add a replay viewer
 - calculate joint jitter while the user is still
@@ -32,10 +33,11 @@ Acceptance criteria:
 - raw and enhanced output can be compared on the same recording
 - smoothing settings and metrics are written into exported sessions
 - predicted joints are visually distinct from measured joints
+- predictions decay and time out rather than drifting indefinitely
 
 ## Phase 2: body rendering
 
-Status: live renderer validated; quality work in progress
+Status: live renderer validated; interactive quality controls implemented
 
 - map depth pixels into camera-space coordinates
 - render a live body-only point cloud
@@ -52,8 +54,26 @@ Acceptance criteria:
 
 - the user can rotate a body point cloud independently of the physical camera
 - live body rendering remains interactive on the development PC
+- detail and point-size settings visibly alter quality and load
 - dense mode no longer appears as large tiled blocks when zoomed
 - exported point clouds open correctly in Blender or CloudCompare
+
+## Phase 2.5: camera output and recording
+
+Status: scaled PNG output implemented; video encoder pending
+
+- save clean camera compositions at 0.5x to 3x output scale
+- include RGB, skeleton and heatmap layers in output
+- add RGB video recording
+- add optional depth/hologram recording
+- keep tracking-data recording separate and clearly labelled
+- report dropped frames and output frame rate
+
+Acceptance criteria:
+
+- generated output has the selected dimensions
+- video recording does not block Kinect frame processing
+- file names and controls clearly distinguish video from skeleton JSON
 
 ## Phase 3: modern pose estimation
 
@@ -74,7 +94,7 @@ Acceptance criteria:
 - compare Kinect and model landmarks in a shared coordinate system
 - choose or blend estimates based on confidence and temporal consistency
 - enforce basic limb-length and joint-angle constraints
-- add velocity-aware prediction during brief occlusion
+- refine velocity-aware prediction during brief occlusion
 - quantify improvement over the Phase 1 baseline
 
 Acceptance criteria:
