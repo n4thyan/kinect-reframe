@@ -59,13 +59,15 @@
                     CornerRadius="4"
                     ClipToBounds="True">
                 <Grid>
-                    <Image x:Name="ColorImage" Stretch="Uniform" />
-                    <Canvas x:Name="SkeletonCanvas"
-                            Width="640"
-                            Height="480"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            IsHitTestVisible="False" />
+                    <Viewbox Stretch="Uniform">
+                        <Grid Width="640" Height="480">
+                            <Image x:Name="ColorImage" Width="640" Height="480" Stretch="Fill" />
+                            <Canvas x:Name="SkeletonCanvas"
+                                    Width="640"
+                                    Height="480"
+                                    IsHitTestVisible="False" />
+                        </Grid>
+                    </Viewbox>
                     <Border HorizontalAlignment="Left"
                             VerticalAlignment="Top"
                             Background="#B0101318"
