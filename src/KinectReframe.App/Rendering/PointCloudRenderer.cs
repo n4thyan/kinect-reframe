@@ -39,7 +39,10 @@ namespace KinectReframe.Rendering
             bool bodyOnly,
             double yawDegrees,
             double pitchDegrees,
-            double zoom)
+            double zoom,
+            int detailLevel,
+            int pointSize,
+            bool useSurfaceShading)
         {
             if (depthPixels == null)
             {
@@ -68,10 +71,14 @@ namespace KinectReframe.Rendering
             double sinPitch = Math.Sin(pitch);
             double focalLength = 285.0 * Clamp(zoom, 0.35, 3.0);
 
-            // Body mode samples every depth pixel. The previous 2-pixel stride made zoomed
-            // views look like large tiles; radius 1 at full density costs roughly the same.
-            int sampleStep = bodyOnly ? 1 : 2;
-            int pointRadius = bodyOnly ? 1 : 1;
+            int clampedDetail = Math.Max(1, Math.Min(4, detailLevel));
+            int sampleStep = 5 - clampedDetail;
+            if (!bodyOnly)
+            {
+                sampleStep = Math.Max(2, sampleStep);
+            }
+
+            int pointRadius = Math.Max(0, Math.Min(3, pointSize - 1));
 
             // Rotate around a useful room-scale pivot rather than around the Kinect lens.
             const double pivotDepth = 2.0;
@@ -114,7 +121,10 @@ namespace KinectReframe.Rendering
                         continue;
                     }
 
-                    double surfaceLight = EstimateSurfaceLight(cameraPoints, sourceX, sourceY, sourceIndex);
+                    double surfaceLight = useSurfaceShading
+                        ? EstimateSurfaceLight(cameraPoints, sourceX, sourceY, sourceIndex)
+                        : 0.96;
+
                     byte red;
                     byte green;
                     byte blue;
