@@ -84,22 +84,67 @@
                     BorderThickness="1"
                     CornerRadius="4"
                     ClipToBounds="True">
-                <Grid>
-                    <Image x:Name="BodyImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="NearestNeighbor" />
-                    <Border HorizontalAlignment="Left"
-                            VerticalAlignment="Top"
-                            Background="#B0101318"
-                            Padding="10,6"
-                            Margin="10">
-                        <TextBlock Text="BODY-ONLY DEPTH HOLOGRAM" FontSize="12" FontWeight="SemiBold" />
-                    </Border>
-                    <TextBlock x:Name="NoBodyText"
-                               Text="Move into view"
-                               Foreground="{StaticResource MutedTextBrush}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               FontSize="20" />
-                </Grid>
+                <TabControl Background="#030A0B" BorderThickness="0">
+                    <TabItem Header="DEPTH HOLOGRAM">
+                        <Grid Background="#030A0B">
+                            <Image x:Name="BodyImage"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                            <Border HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
+                                    Background="#B0101318"
+                                    Padding="10,6"
+                                    Margin="10">
+                                <TextBlock Text="PLAYER-INDEXED DEPTH" FontSize="12" FontWeight="SemiBold" />
+                            </Border>
+                            <TextBlock x:Name="NoBodyText"
+                                       Text="Move into view"
+                                       Foreground="{StaticResource MutedTextBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="20" />
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem Header="3D POINT CLOUD">
+                        <Grid x:Name="PointCloudViewport"
+                              Background="#020607"
+                              Cursor="SizeAll"
+                              MouseLeftButtonDown="PointCloudViewport_MouseLeftButtonDown"
+                              MouseLeftButtonUp="PointCloudViewport_MouseLeftButtonUp"
+                              MouseMove="PointCloudViewport_MouseMove"
+                              MouseWheel="PointCloudViewport_MouseWheel">
+                            <Image x:Name="PointCloudImage"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                            <Border HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
+                                    Background="#B0101318"
+                                    Padding="10,6"
+                                    Margin="10">
+                                <TextBlock Text="LIVE CAMERA-SPACE POINT CLOUD" FontSize="12" FontWeight="SemiBold" />
+                            </Border>
+                            <Border HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom"
+                                    Background="#B0101318"
+                                    Padding="10,7"
+                                    Margin="10">
+                                <StackPanel>
+                                    <TextBlock Text="Drag to orbit • wheel to zoom" FontSize="11" />
+                                    <TextBlock x:Name="PointCloudViewText"
+                                               Text="Yaw 0°  Pitch 0°  Zoom 1.00x"
+                                               Foreground="{StaticResource MutedTextBrush}"
+                                               FontSize="11"
+                                               Margin="0,3,0,0" />
+                                    <TextBlock x:Name="PointCloudCountText"
+                                               Text="0 rendered points"
+                                               Foreground="{StaticResource MutedTextBrush}"
+                                               FontSize="11" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </TabItem>
+                </TabControl>
             </Border>
         </Grid>
 
@@ -123,7 +168,7 @@
                               Checked="SeatedModeCheckBox_Changed"
                               Unchecked="SeatedModeCheckBox_Changed" />
                     <CheckBox x:Name="ShowRawCheckBox" Content="Show raw skeleton" IsChecked="True" />
-                    <CheckBox x:Name="BodyOnlyCheckBox" Content="Body-only render" IsChecked="True" />
+                    <CheckBox x:Name="BodyOnlyCheckBox" Content="Body-only rendering" IsChecked="True" />
                     <TextBlock Text="Smoothing responsiveness" VerticalAlignment="Center" Margin="0,0,10,0" />
                     <Slider x:Name="SmoothingSlider"
                             Width="160"
@@ -148,6 +193,7 @@
                         <Button x:Name="RecordButton" Content="Start recording" Click="RecordButton_Click" />
                         <Button Content="Save snapshot" Click="SnapshotButton_Click" />
                         <Button Content="Reset filters" Click="ResetFiltersButton_Click" Background="#DCE6EA" />
+                        <Button Content="Reset 3D view" Click="ResetPointCloudViewButton_Click" Background="#DCE6EA" />
                     </StackPanel>
 
                     <TextBlock Grid.Column="1"
