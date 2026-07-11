@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Kinect;
@@ -21,11 +22,19 @@ namespace KinectReframe
         private KinectSensor sensor;
         private WriteableBitmap colorBitmap;
         private WriteableBitmap bodyBitmap;
+        private WriteableBitmap pointCloudBitmap;
         private byte[] colorPixels;
         private DepthImagePixel[] depthPixels;
+        private SkeletonPoint[] pointCloudPoints;
         private Skeleton[] skeletons;
         private BodyDepthRenderer bodyRenderer;
+        private PointCloudRenderer pointCloudRenderer;
         private int framesSinceFpsUpdate;
+        private bool pointCloudDragging;
+        private Point lastPointCloudMousePosition;
+        private double pointCloudYaw;
+        private double pointCloudPitch;
+        private double pointCloudZoom = 1.0;
 
         public MainWindow()
         {
@@ -34,6 +43,7 @@ namespace KinectReframe
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            UpdatePointCloudViewText();
             StartSensor();
         }
 
@@ -59,6 +69,7 @@ namespace KinectReframe
 
                 colorPixels = new byte[sensor.ColorStream.FramePixelDataLength];
                 depthPixels = new DepthImagePixel[sensor.DepthStream.FramePixelDataLength];
+                pointCloudPoints = new SkeletonPoint[sensor.DepthStream.FramePixelDataLength];
                 skeletons = new Skeleton[sensor.SkeletonStream.FrameSkeletonArrayLength];
 
                 colorBitmap = new WriteableBitmap(
@@ -77,14 +88,31 @@ namespace KinectReframe
                     PixelFormats.Bgra32,
                     null);
 
+                const int pointCloudWidth = 640;
+                const int pointCloudHeight = 480;
+                pointCloudBitmap = new WriteableBitmap(
+                    pointCloudWidth,
+                    pointCloudHeight,
+                    96,
+                    96,
+                    PixelFormats.Bgra32,
+                    null);
+
                 bodyRenderer = new BodyDepthRenderer(sensor.DepthStream.FrameWidth, sensor.DepthStream.FrameHeight);
+                pointCloudRenderer = new PointCloudRenderer(
+                    sensor.DepthStream.FrameWidth,
+                    sensor.DepthStream.FrameHeight,
+                    pointCloudWidth,
+                    pointCloudHeight);
+
                 ColorImage.Source = colorBitmap;
                 BodyImage.Source = bodyBitmap;
+                PointCloudImage.Source = pointCloudBitmap;
 
                 sensor.AllFramesReady += Sensor_AllFramesReady;
                 sensor.Start();
 
-                SetConnectionState(true, sensor.UniqueKinectId == null ? "Kinect connected" : "Kinect connected");
+                SetConnectionState(true, "Kinect connected");
             }
             catch (IOException exception)
             {
@@ -134,7 +162,8 @@ namespace KinectReframe
                 }
 
                 frame.CopyDepthImagePixelDataTo(depthPixels);
-                byte[] renderedPixels = bodyRenderer.Render(depthPixels, BodyOnlyCheckBox.IsChecked == true);
+                bool bodyOnly = BodyOnlyCheckBox.IsChecked == true;
+                byte[] renderedPixels = bodyRenderer.Render(depthPixels, bodyOnly);
 
                 bodyBitmap.WritePixels(
                     new Int32Rect(0, 0, frame.Width, frame.Height),
@@ -145,6 +174,27 @@ namespace KinectReframe
                 NoBodyText.Visibility = bodyRenderer.BodyPixelCount > 80
                     ? Visibility.Collapsed
                     : Visibility.Visible;
+
+                sensor.CoordinateMapper.MapDepthFrameToSkeletonFrame(
+                    DepthImageFormat.Resolution320x240Fps30,
+                    depthPixels,
+                    pointCloudPoints);
+
+                byte[] pointCloudPixels = pointCloudRenderer.Render(
+                    depthPixels,
+                    pointCloudPoints,
+                    bodyOnly,
+                    pointCloudYaw,
+                    pointCloudPitch,
+                    pointCloudZoom);
+
+                pointCloudBitmap.WritePixels(
+                    new Int32Rect(0, 0, pointCloudBitmap.PixelWidth, pointCloudBitmap.PixelHeight),
+                    pointCloudPixels,
+                    pointCloudBitmap.PixelWidth * 4,
+                    0);
+
+                PointCloudCountText.Text = pointCloudRenderer.PointCount.ToString("N0") + " sampled points";
             }
         }
 
@@ -223,6 +273,68 @@ namespace KinectReframe
             {
                 SmoothingValueText.Text = e.NewValue.ToString("0.00");
             }
+        }
+
+        private void PointCloudViewport_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            pointCloudDragging = true;
+            lastPointCloudMousePosition = e.GetPosition(PointCloudViewport);
+            PointCloudViewport.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void PointCloudViewport_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            pointCloudDragging = false;
+            PointCloudViewport.ReleaseMouseCapture();
+            e.Handled = true;
+        }
+
+        private void PointCloudViewport_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!pointCloudDragging || e.LeftButton != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            Point currentPosition = e.GetPosition(PointCloudViewport);
+            Vector delta = currentPosition - lastPointCloudMousePosition;
+            lastPointCloudMousePosition = currentPosition;
+
+            pointCloudYaw += delta.X * 0.35;
+            pointCloudPitch = Math.Max(-85.0, Math.Min(85.0, pointCloudPitch - (delta.Y * 0.35)));
+            UpdatePointCloudViewText();
+            e.Handled = true;
+        }
+
+        private void PointCloudViewport_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            pointCloudZoom *= e.Delta > 0 ? 1.1 : (1.0 / 1.1);
+            pointCloudZoom = Math.Max(0.35, Math.Min(3.0, pointCloudZoom));
+            UpdatePointCloudViewText();
+            e.Handled = true;
+        }
+
+        private void ResetPointCloudViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            pointCloudYaw = 0.0;
+            pointCloudPitch = 0.0;
+            pointCloudZoom = 1.0;
+            UpdatePointCloudViewText();
+        }
+
+        private void UpdatePointCloudViewText()
+        {
+            if (PointCloudViewText == null)
+            {
+                return;
+            }
+
+            PointCloudViewText.Text = string.Format(
+                "Yaw {0:0}°  Pitch {1:0}°  Zoom {2:0.00}x",
+                pointCloudYaw,
+                pointCloudPitch,
+                pointCloudZoom);
         }
 
         private void RecordButton_Click(object sender, RoutedEventArgs e)
