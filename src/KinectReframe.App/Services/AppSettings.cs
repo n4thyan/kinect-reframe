@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
 
@@ -28,6 +29,7 @@ namespace KinectReframe.Services
         public double OutputScale { get; set; }
         public double VideoFps { get; set; }
         public double VideoQuality { get; set; }
+        public List<CustomSceneSettings> CustomScenes { get; set; }
 
         public static AppSettings CreateDefaults()
         {
@@ -49,9 +51,37 @@ namespace KinectReframe.Services
                 PointCloudShading = true,
                 OutputScale = 1.0,
                 VideoFps = 15,
-                VideoQuality = 82
+                VideoQuality = 82,
+                CustomScenes = new List<CustomSceneSettings>()
             };
         }
+    }
+
+    [Serializable]
+    public sealed class CustomSceneSettings
+    {
+        public string Name { get; set; }
+        public string PreviewMode { get; set; }
+        public int RendererTab { get; set; }
+        public bool Skeleton { get; set; }
+        public bool RawSkeleton { get; set; }
+        public bool MotionHeat { get; set; }
+        public bool DepthHeat { get; set; }
+        public bool Grid { get; set; }
+        public bool Mirror { get; set; }
+        public bool SeatedTracking { get; set; }
+        public bool BodyOnly { get; set; }
+        public bool PointCloudShading { get; set; }
+        public double Brightness { get; set; }
+        public double Contrast { get; set; }
+        public double Smoothing { get; set; }
+        public double MotionThreshold { get; set; }
+        public double MotionPersistence { get; set; }
+        public double PointCloudDetail { get; set; }
+        public double PointCloudPointSize { get; set; }
+        public double OutputScale { get; set; }
+        public double VideoFps { get; set; }
+        public double VideoQuality { get; set; }
     }
 
     public static class AppSettingsStore
@@ -84,7 +114,17 @@ namespace KinectReframe.Services
                 using (FileStream stream = File.OpenRead(SettingsPath))
                 {
                     AppSettings settings = serializer.Deserialize(stream) as AppSettings;
-                    return settings ?? AppSettings.CreateDefaults();
+                    if (settings == null)
+                    {
+                        return AppSettings.CreateDefaults();
+                    }
+
+                    if (settings.CustomScenes == null)
+                    {
+                        settings.CustomScenes = new List<CustomSceneSettings>();
+                    }
+
+                    return settings;
                 }
             }
             catch
@@ -98,6 +138,11 @@ namespace KinectReframe.Services
             if (settings == null)
             {
                 throw new ArgumentNullException("settings");
+            }
+
+            if (settings.CustomScenes == null)
+            {
+                settings.CustomScenes = new List<CustomSceneSettings>();
             }
 
             Directory.CreateDirectory(SettingsDirectory);
