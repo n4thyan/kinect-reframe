@@ -17,6 +17,7 @@ The WPF prototype includes:
 - tracked, inferred and predicted joint colours
 - body-only depth hologram render using the Kinect player mask
 - live camera-space 3D point-cloud renderer
+- dense body sampling with depth-aware surface shading
 - mouse-drag orbit, mouse-wheel zoom and view reset
 - body-only and full-scene point-cloud modes
 - ASCII PLY export for Blender, MeshLab and other 3D tools
@@ -66,7 +67,7 @@ Open the **3D POINT CLOUD** tab in the right-hand panel:
 - use **Reset 3D** to return to the Kinect camera angle
 - use **Export PLY** to save the current body or room cloud in real camera-space metres
 
-The renderer uses the Kinect SDK coordinate mapper to convert each sampled depth pixel into a real camera-space `X/Y/Z` point. The first version is software-rendered and dependency-free so it can stay compatible with the SDK 1.8 x86 application.
+The renderer uses the Kinect SDK coordinate mapper to convert each depth pixel into a real camera-space `X/Y/Z` point. Body-only mode samples every valid player-indexed depth pixel, while complete-scene mode uses a lighter stride to protect frame rate. Local depth neighbours are used to estimate surface orientation, adding stable shading that reveals more facial and torso form without inventing geometry.
 
 PLY exports include per-vertex RGB values. Tracked-player points use the cyan hologram palette and room points use a depth-based colour gradient.
 
@@ -115,7 +116,7 @@ You can also build from PowerShell after installing Visual Studio:
 Runtime files are written beside the executable and ignored by Git:
 
 ```text
-captures/    PNG application and camera-frame snapshots
+captures/    PNG interface snapshots
 recordings/  timestamped .krs.json skeleton sessions
 exports/     body or scene .ply point clouds
 ```
@@ -133,15 +134,15 @@ The report shows duration, average frame rate, raw-to-smoothed correction distan
 ## Architecture
 
 ```text
-Kinect RGB stream ───────────────> camera adjustments + clean camera panel
-Kinect depth + player index ─────> depth hologram
-                 ├───────────────> motion/depth heatmap overlays
+Kinect RGB stream ───────────────> live camera panel
+Kinect depth + player index ─────> depth hologram renderer
+                 ├───────────────> motion/depth heatmaps
                  └───────────────> camera-space X/Y/Z mapping
-                                     ├────────> interactive 3D point cloud
-                                     └────────> PLY exporter
+                                    ├────────> dense shaded 3D point cloud
+                                    └────────> PLY exporter
 Kinect skeleton ─────────────────> raw skeleton
                   └──────────────> temporal smoother and short occlusion hold
-                                   └────────> optional overlay + JSON recorder
+                                   └────────> enhanced skeleton + JSON recorder
 ```
 
 ## Continuous integration
@@ -155,6 +156,7 @@ A successful CI compile does not prove that the physical sensor or Kinect runtim
 - velocity-aware One Euro or Kalman filtering
 - replay and side-by-side tracking comparison
 - RGB-aligned point-cloud colouring
+- configurable point size and render-density controls
 - Kinect depth mapped onto RGB pose landmarks
 - modern pose model integration through ONNX Runtime
 - confidence-weighted fusion between Kinect and AI estimates
