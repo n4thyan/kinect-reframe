@@ -1,0 +1,29 @@
+name: Python tools
+
+on:
+  push:
+    paths:
+      - "tools/**"
+      - ".github/workflows/python-tools.yml"
+  pull_request:
+    paths:
+      - "tools/**"
+      - ".github/workflows/python-tools.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile tools
+        run: python -m py_compile tools/analyse_recording.py
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tools/tests -v

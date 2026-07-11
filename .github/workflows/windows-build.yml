@@ -1,0 +1,42 @@
+name: Windows build
+
+on:
+  push:
+    paths:
+      - "src/**"
+      - "ci/**"
+      - "KinectReframe.sln"
+      - ".github/workflows/windows-build.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "ci/**"
+      - "KinectReframe.sln"
+      - ".github/workflows/windows-build.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Compile WPF application
+        shell: pwsh
+        run: >-
+          msbuild KinectReframe.sln
+          /m
+          /p:Configuration=Release
+          /p:Platform=x86
+          /p:UseKinectStub=true
+          /verbosity:minimal
+
+      - name: Upload compile output
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinect-reframe-stub-build
+          path: src/KinectReframe.App/bin/Release/
+          if-no-files-found: error
