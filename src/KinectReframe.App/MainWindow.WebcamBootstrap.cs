@@ -2,20 +2,44 @@ using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace KinectReframe
 {
     public partial class MainWindow
     {
         private bool layoutPolishApplied;
+        private bool webcamBootstrapQueued;
 
         protected override void OnActivated(EventArgs e)
         {
             base.OnActivated(e);
 
-            // The webcam/camera inspector is assembled after the complete WPF tree exists.
-            // Calling it here avoids relying solely on a Loaded subscription created from
-            // another partial class, which did not run consistently on the Kinect PC.
+            // OnActivated can occur before Window.Loaded. Rebuilding the inspector at that
+            // point marks it ready before ScrollViewer/Expander visuals exist, leaving the
+            // original prototype controls on screen. Queue one pass at ContextIdle so the
+            // XAML Loaded handler, sensor startup and complete visual tree all exist first.
+            if (!webcamBootstrapQueued && !webcamFeaturesReady)
+            {
+                webcamBootstrapQueued = true;
+                Dispatcher.BeginInvoke(new Action(BootstrapWebcamWorkspace), DispatcherPriority.ContextIdle);
+            }
+
+            ApplyStudioLayoutPolish();
+        }
+
+        private void BootstrapWebcamWorkspace()
+        {
+            webcamBootstrapQueued = false;
+
+            if (!IsLoaded)
+            {
+                return;
+            }
+
+            // An earlier Loaded/Activated callback may have run before the inspector's
+            // visuals were generated. Force the definitive post-load rebuild once here.
+            webcamFeaturesReady = false;
             WebcamWindow_Loaded(this, null);
             ApplyStudioLayoutPolish();
         }
