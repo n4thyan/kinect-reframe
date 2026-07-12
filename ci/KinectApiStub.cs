@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Microsoft.Kinect
 {
@@ -82,6 +83,14 @@ namespace Microsoft.Kinect
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
+    }
+
+    public struct Vector4
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+        public float W { get; set; }
     }
 
     public struct ColorImagePoint
@@ -190,6 +199,25 @@ namespace Microsoft.Kinect
         }
     }
 
+    public sealed class KinectAudioSource
+    {
+        private readonly MemoryStream stream = new MemoryStream(new byte[8192], true);
+
+        public double BeamAngle { get; set; }
+        public double SoundSourceAngle { get; set; }
+        public double SoundSourceAngleConfidence { get; set; }
+
+        public Stream Start()
+        {
+            stream.Position = 0;
+            return stream;
+        }
+
+        public void Stop()
+        {
+        }
+    }
+
     public sealed class CoordinateMapper
     {
         public ColorImagePoint MapSkeletonPointToColorPoint(
@@ -256,6 +284,7 @@ namespace Microsoft.Kinect
             DepthStream = new DepthImageStream();
             SkeletonStream = new SkeletonStream();
             CoordinateMapper = new CoordinateMapper();
+            AudioSource = new KinectAudioSource();
         }
 
         public static KinectSensorCollection KinectSensors
@@ -266,12 +295,19 @@ namespace Microsoft.Kinect
         public KinectStatus Status { get; set; }
         public bool IsRunning { get; private set; }
         public string UniqueKinectId { get; set; }
+        public int ElevationAngle { get; set; }
         public ColorImageStream ColorStream { get; private set; }
         public DepthImageStream DepthStream { get; private set; }
         public SkeletonStream SkeletonStream { get; private set; }
         public CoordinateMapper CoordinateMapper { get; private set; }
+        public KinectAudioSource AudioSource { get; private set; }
 
         public event EventHandler<AllFramesReadyEventArgs> AllFramesReady;
+
+        public Vector4 AccelerometerGetCurrentReading()
+        {
+            return new Vector4 { Y = 1.0f };
+        }
 
         public void Start()
         {
