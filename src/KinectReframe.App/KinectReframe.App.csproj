@@ -83,6 +83,9 @@
     <Compile Include="MainWindow.Video.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="MainWindow.Webcam.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rendering\BodyDepthRenderer.cs" />
     <Compile Include="Rendering\HeatmapRenderer.cs" />
